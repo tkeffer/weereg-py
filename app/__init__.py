@@ -50,16 +50,20 @@ def create_app(test_config=None):
     # Legacy "v1" GET statement:
     @app.get('/v1')
     def add_station():
-        print('origin=', request.origin)
-        print('remote_addr=', request.remote_addr)
         station_info = request.args.to_dict()
         station_info['last_seen'] = str(int(time.time() + 0.5))
         station_info['last_addr'] = request.remote_addr
-        to_update = STATION_INFO.intersection(station_info)
-        pairs = [(k, f'"{station_info[k]}"') for k in to_update]
-        obs, values = zip(*pairs)
-        sql_stmt = f'INSERT INTO stations ({", ".join(obs)}) VALUES ({", ".join(values)});'
-        print(sql_stmt)
+
+        # The set of values to be inserted.
+        # This is the set of types in station_info that are also in the schema
+        to_insert = STATION_INFO.intersection(station_info)
+
+        # Get a list of sql type names and a list of their values.
+        # Make sure the values are in quotation marks, because they might contain spaces.
+        pairs = [(k, f'"{station_info[k]}"') for k in to_insert]
+        columns, values = zip(*pairs)
+        sql_stmt = f'INSERT INTO stations ({", ".join(columns)}) VALUES ({", ".join(values)});'
+
         db_conn = db.get_db()
         with db_conn.cursor() as cursor:
             cursor.execute(sql_stmt)
