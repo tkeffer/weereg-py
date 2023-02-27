@@ -75,16 +75,32 @@ def create_app(test_config=None):
     @app.get('/api/v2/stations')
     def get_stations():
         """Get all recent stations. """
-        since = request.args.get('since', current_app.config.get("STALE_AGE", 3600*24*30))
+
+        try:
+            if 'since' in request.args:
+                if 'max_age' in request.args:
+                    return "Specify 'max_age' or 'since', but not both", 400
+                since = int(request.args['since'])
+            else:
+                max_age = duration(request.args.get('max_age', current_app.config.get("STATIONS_MAX_AGE", "30d")))
+                since = time.time() - max_age
+            limit = int(request.args.get('limit', current_app.config.get("STATIONS_LIMIT", 2000)))
+        except ValueError:
+            return "Badly formed request", 400
+
+        results = [stn for stn in db.gen_stations_since(since, limit)]
+        return results
 
     db.init_app(app)
 
     return app
 
 
-def to_float(value):
-    try:
-        value = float(value)
-    except (ValueError, TypeError):
-        value = None
-    return value
+def duration(val):
+    if val.endswith('d'):
+        return int(val[:-1]) * 3600 * 24
+    elif val.endswith('h'):
+        return int(val[:-1]) * 3600
+    elif val.endswith('M'):
+        return int(val[:-1]) * 60
+    return int(val)

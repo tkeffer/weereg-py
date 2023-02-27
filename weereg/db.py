@@ -106,13 +106,37 @@ def get_last_seen(station_url):
         return last_seen
 
 
-def get_stations_since(since):
-    """Get the last time each station was seen since a given time.
+# Prepare for the inner join:
+t_list = ["t.%s" % col for col in STATION_COLUMNS]
+# Form it:
+STATIONS_SINCE_SQL = f"""SELECT {", ".join(t_list)}
+FROM weereg.stations t
+INNER JOIN (
+    SELECT station_url, MAX(last_seen) as MaxSeen
+    FROM weereg.stations
+    WHERE last_seen > %s
+    GROUP BY station_url
+    LIMIT %s
+) tm ON t.station_url = tm.station_url AND t.last_seen = tm.MaxSeen
+ORDER BY last_seen ASC
+"""
+
+
+def gen_stations_since(since=0, limit=None):
+    """Generate a sequence of dictionaries.
+    Each dictionary is the data from when a station was last seen.
     Args:
-        since (float|int): Get stations since this time.
+        since (float|int): Generate station information since this time.
+        limit (int|None): Max number of stations to return. Default is 2000
 
-    Returns:
-        list[dict]: A list of dictionaries
+    Yields:
+        dict: Station information
     """
+    limit = limit or 2000
 
-
+    conn = pymysql.connect(host='localhost', user='weewx', passwd='weewx', db='weereg')
+    with conn.cursor() as cursor:
+        cursor.execute(STATIONS_SINCE_SQL, (since, limit))
+        for result in cursor.fetchall():
+            d = dict(zip(STATION_COLUMNS, result))
+            yield d
