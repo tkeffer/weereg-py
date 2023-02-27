@@ -1,0 +1,26 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+*~
+!/.idea
+/.idea/*
+!/.idea/codeStyles
+.project
+.pydevproject
+.settings
+*.pyc
+build
+dist
+MANIFEST
+junk*
+*.sln
+*.user
+*.pyproj
+*.suo
+.DS_Store
+*.config
+*.egg-info
+.venv/*
+venv/*
