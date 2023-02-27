@@ -7,15 +7,25 @@
 
 To use:
 
-1. Create a directory in your home directory called 'weereg':
+1. Create a virtual environment
+       python3 -m venv venv
+2. Activate it
+       source ./venv/bin/activate
+3. Install flask and pymysql
+       python3 -m pip install flask pymysql
+4. Create a directory in your home directory called 'weereg':
        mkdir ~/weereg
-
-2. Put a file called "config.py" in it. This is a file in Python
+5. Put a file called "config.py" in it. This is a file in Python
    that will contain configuration information.
    Sample contents:
-       USER = 'username'
-       PASSWORD = 'your_password'
-       MIN_DELAY = 3600  # Users cannot post more often than this.
+        USER = 'username'
+        PASSWORD = 'your_password'
+        MIN_DELAY = 3600  # Users cannot post more often than this.
+        # Configuration for method GET /api/v2/stations
+        STATIONS_MAX_AGE=3600 * 24 * 30   # = One month
+        STATIONS_LIMIT = 2000
+6. Run the flask app from the weereg-py directory
+        python3 -m flask --app weereg run
 """
 
 import os
