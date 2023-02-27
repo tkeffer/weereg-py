@@ -1,51 +1,55 @@
-import collections
+#
+#    Copyright (c) 2023 Tom Keffer <tkeffer@gmail.com>
+#
+#    See the file LICENSE.txt for your full rights.
+#
+"""Create and run a Flask app to capture station registry data
+
+To use:
+
+1. Create a directory in your home directory called 'weereg':
+       mkdir ~/weereg
+
+2. Put a file called "config.py" in it. This is a file in Python
+   that will contain configuration information.
+   Sample contents:
+       USER = 'username'
+       PASSWORD = 'your_password'
+       MIN_DELAY = 3600  # Users cannot post more often than this.
+"""
+
 import os
+import os.path
 import time
 
-from flask import Flask, request
+from flask import Flask, request, current_app
 
 from . import db
-
-# Columns of the SQL table 'stations'
-STATION_INFO = frozenset([
-    "station_url",
-    "description",
-    "latitude",
-    "longitude",
-    "station_type",
-    "station_model",
-    "weewx_info",
-    "python_info",
-    "platform_info",
-    "last_addr",
-    "last_seen",
-])
 
 
 def create_app(test_config=None):
     # create and configure the app
-    app = Flask(__name__, instance_relative_config=True)
+    app = Flask(__name__,
+                instance_path=os.path.expanduser("~/weereg"),
+                instance_relative_config=True)
     app.config.from_mapping(
         HOST='localhost',
         PORT=3306,
-        USER='weewx',
-        PASSWORD='weewx',
         DATABASE='weereg',
         STATION_TABLE='stations',
     )
 
-    if test_config is None:
-        # load the instance config, if it exists, when not testing
-        app.config.from_pyfile('config.py', silent=True)
-    else:
+    if test_config:
         # load the test config if passed in
         app.config.from_mapping(test_config)
-
-    # ensure the instance folder exists
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
+    else:
+        # If not testing, load the instance config
+        try:
+            app.config.from_pyfile('config.py')
+        except FileNotFoundError as e:
+            print(e)
+            print(f"See the top of file {__file__} for directions.")
+            raise
 
     # Legacy "v1" GET statement:
     @app.get('/v1')
@@ -54,19 +58,16 @@ def create_app(test_config=None):
         station_info['last_seen'] = str(int(time.time() + 0.5))
         station_info['last_addr'] = request.remote_addr
 
-        # The set of values to be inserted.
-        # This is the set of types in station_info that are also in the schema
-        to_insert = STATION_INFO.intersection(station_info)
+        # We must have a station_url
+        if 'station_url' not in station_info:
+            return "Missing parameter station_url", 400
 
-        # Get a list of sql type names and a list of their values.
-        # Make sure the values are in quotation marks, because they might contain spaces.
-        pairs = [(k, f'"{station_info[k]}"') for k in to_insert]
-        columns, values = zip(*pairs)
-        sql_stmt = f'INSERT INTO stations ({", ".join(columns)}) VALUES ({", ".join(values)});'
+        # Cannot post too frequently
+        last_post = db.get_last_seen(station_info['station_url'])
+        if last_post and station_info['last_seen'] - last_post < current_app.config.get("MIN_DELAY", 3600):
+            return "Registering too frequently", 429
 
-        db_conn = db.get_db()
-        with db_conn.cursor() as cursor:
-            cursor.execute(sql_stmt)
+        db.insert_into_stations(station_info)
 
         return "OK"
 
