@@ -6,8 +6,7 @@ from flask import current_app, g
 
 from . import db
 
-# Columns of the SQL table 'stations'
-STATION_INFO = frozenset([
+STATION_COLUMNS = [
     "station_url",
     "description",
     "latitude",
@@ -19,7 +18,9 @@ STATION_INFO = frozenset([
     "platform_info",
     "last_addr",
     "last_seen",
-])
+]
+# Columns of the SQL table 'stations'
+STATION_INFO = frozenset(STATION_COLUMNS)
 
 
 def get_db():
@@ -98,7 +99,20 @@ def insert_into_stations(station_info):
 def get_last_seen(station_url):
     db_conn = db.get_db()
     with db_conn.cursor() as cursor:
-        cursor.execute('SELECT last_seen FROM weereg.stations WHERE station_url=%s ORDER BY last_seen DESC LIMIT 1', station_url)
+        cursor.execute('SELECT last_seen FROM weereg.stations WHERE station_url=%s ORDER BY last_seen DESC LIMIT 1',
+                       station_url)
         result = cursor.fetchone()
         last_seen = result[0] if result else None
         return last_seen
+
+
+def get_stations_since(since):
+    """Get the last time each station was seen since a given time.
+    Args:
+        since (float|int): Get stations since this time.
+
+    Returns:
+        list[dict]: A list of dictionaries
+    """
+
+

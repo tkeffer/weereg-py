@@ -52,10 +52,11 @@ def create_app(test_config=None):
             raise
 
     # Legacy "v1" GET statement:
-    @app.get('/v1')
+    @app.get('/api/v1/stations')
     def add_station():
+        """Add a station registration to the database."""
         station_info = request.args.to_dict()
-        station_info['last_seen'] = str(int(time.time() + 0.5))
+        station_info['last_seen'] = int(time.time() + 0.5)
         station_info['last_addr'] = request.remote_addr
 
         # We must have a station_url
@@ -70,6 +71,11 @@ def create_app(test_config=None):
         db.insert_into_stations(station_info)
 
         return "OK"
+
+    @app.get('/api/v2/stations')
+    def get_stations():
+        """Get all recent stations. """
+        since = request.args.get('since', current_app.config.get("STALE_AGE", 3600*24*30))
 
     db.init_app(app)
 
