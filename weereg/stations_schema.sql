@@ -12,8 +12,8 @@ CREATE TABLE weereg.stations (
   `platform_info` varchar(128) DEFAULT NULL,
   `config_path` varchar(64) DEFAULT NULL,
   `entry_path` varchar(64) DEFAULT NULL,
-  `last_addr` varchar(16) DEFAULT NULL,
-  `last_seen` int DEFAULT NULL,
+  `last_addr` varchar(16) NOT NULL,
+  `last_seen` int NOT NULL,
   KEY `index_station_url` (`station_url`),
   KEY `index_last_seen` (`last_seen`),
   KEY `index_ip` (`last_addr`)
