@@ -18,6 +18,8 @@ STATION_COLUMNS = [
     "platform_info",
     "last_addr",
     "last_seen",
+    "config_path",
+    "entry_path"
 ]
 # Columns of the SQL table 'stations'
 STATION_INFO = frozenset(STATION_COLUMNS)
@@ -78,7 +80,10 @@ def init_app(app):
 
 
 def insert_into_stations(station_info):
-    """Insert the station information into the database."""
+    """Insert the station information into the database.
+    Args:
+        station_info(dict): Keys are columns in the database.
+    """
 
     # This is the set of types in station_info that are also in the schema
     to_insert = STATION_INFO.intersection(station_info)
@@ -97,6 +102,14 @@ def insert_into_stations(station_info):
 
 
 def get_last_seen(station_url):
+    """Return the last time a station reported in.
+
+    Args:
+        station_url(str): The unique URL for the station.
+
+    Returns:
+        int: Time it was last seen in unix epoch time.
+    """
     db_conn = db.get_db()
     with db_conn.cursor() as cursor:
         cursor.execute('SELECT last_seen FROM weereg.stations WHERE station_url=%s ORDER BY last_seen DESC LIMIT 1',
