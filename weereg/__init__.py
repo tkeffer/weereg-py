@@ -5,27 +5,7 @@
 #
 """Create and run a Flask app to capture station registry data
 
-To use:
-
-1. Create a virtual environment
-       python3 -m venv venv
-2. Activate it
-       source ./venv/bin/activate
-3. Install flask and pymysql
-       python3 -m pip install flask pymysql
-4. Create a directory in your home directory called 'weereg':
-       mkdir ~/weereg
-5. Put a file called "config.py" in it. This is a file in Python
-   that will contain configuration information.
-   Sample contents:
-        USER = 'username'
-        PASSWORD = 'your_password'
-        MIN_DELAY = 3600  # Users cannot post more often than this.
-        # Configuration for method GET /api/v2/stations
-        STATIONS_MAX_AGE=3600 * 24 * 30   # = One month
-        STATIONS_LIMIT = 2000
-6. Run the flask app from the weereg-py directory
-        python3 -m flask --app weereg run
+See README.md for how to set up and use.
 """
 
 import os
@@ -107,10 +87,12 @@ def create_app(test_config=None):
 
 
 def duration(val):
-    if val.endswith('d'):
-        return int(val[:-1]) * 3600 * 24
-    elif val.endswith('h'):
-        return int(val[:-1]) * 3600
-    elif val.endswith('M'):
-        return int(val[:-1]) * 60
-    return int(val)
+    if isinstance(val, str):
+        if val.endswith('d'):
+            return int(val[:-1]) * 3600 * 24
+        elif val.endswith('h'):
+            return int(val[:-1]) * 3600
+        elif val.endswith('M'):
+            return int(val[:-1]) * 60
+        return int(val)
+    return val
