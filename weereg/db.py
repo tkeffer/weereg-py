@@ -6,6 +6,8 @@ from flask import current_app, g
 
 from . import db
 
+# The set of data columns in the schema. They can be in any order.
+# TODO: read them dynamically from the databaase.
 STATION_COLUMNS = [
     "station_url",
     "description",
@@ -27,19 +29,19 @@ STATION_INFO = frozenset(STATION_COLUMNS)
 
 def get_db():
     if 'db' not in g:
-        g.db = pymysql.connect(host=current_app.config['HOST'],
-                               port=current_app.config['PORT'],
-                               user=current_app.config['USER'],
-                               passwd=current_app.config['PASSWORD'],
-                               db=current_app.config['DATABASE'])
+        g.db = pymysql.connect(host=current_app.config['WEEREG_MYSQL_HOST'],
+                               port=current_app.config['WEEREG_MYSQL_PORT'],
+                               user=current_app.config['WEEREG_MYSQL_USER'],
+                               passwd=current_app.config['WEEREG_MYSQL_PASSWORD'],
+                               db=current_app.config['WEEREG_MYSQL_DATABASE'])
     return g.db
 
 
 def close_db(e=None):
-    db = g.pop('db', None)
+    db_conn = g.pop('db', None)
 
-    if db is not None:
-        db.close()
+    if db_conn:
+        db_conn.close()
 
 
 def init_db():
@@ -53,18 +55,20 @@ def init_db():
         elif ans.strip() == 'n':
             sys.exit("Nothing done")
 
-    db = get_db()
+    db_conn = get_db()
 
+    # Read in the schema
     with current_app.open_resource('stations_schema.sql') as fd:
-        # Read in the schema
         contents = fd.read().decode('utf8')
-        # It can consist of several SQL statements. Split on the semicolon. Get rid of any resultant empty
-        # statements. Add the semicolon back in.
-        queries = ["%s;" % q.strip() for q in contents.split(';') if q.strip()]
-        # Now execute them one by one
-        with db.cursor() as cursor:
-            for query in queries:
-                cursor.execute(query)
+
+    # The schema can consist of several SQL statements. Split on the semicolon. Get rid of any resultant empty
+    # statements. Add the semicolon back in.
+    queries = ["%s;" % q.strip() for q in contents.split(';') if q.strip()]
+
+    # Now execute them one by one
+    with db_conn.cursor() as cursor:
+        for query in queries:
+            cursor.execute(query)
 
 
 @click.command('init-db')

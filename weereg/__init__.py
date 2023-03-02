@@ -3,12 +3,11 @@
 #
 #    See the file LICENSE.txt for your full rights.
 #
-"""Create and run a Flask app to capture station registry data
+"""Create and run a Flask app to capture station registry data.
 
 See README.md for how to set up and use.
 """
 
-import os
 import os.path
 import time
 
@@ -16,30 +15,31 @@ from flask import Flask, request, current_app
 
 from . import db
 
+parent_dir = os.path.join(os.path.dirname(__file__), '..')
+
 
 def create_app(test_config=None):
     # create and configure the app
-    app = Flask(__name__,
-                instance_path=os.path.expanduser("~/weereg"),
+    app = Flask(__name__, instance_path=parent_dir,
                 instance_relative_config=True)
+    # Set up useful defaults
     app.config.from_mapping(
-        HOST='localhost',
-        PORT=3306,
-        DATABASE='weereg',
-        STATION_TABLE='stations',
+        WEEREG_MYSQL_HOST='localhost',
+        WEEREG_MYSQL_PORT=3306,
+        WEEREG_MYSQL_DATABASE='weereg'
     )
 
+    # Override the defaults
     if test_config:
-        # load the test config if passed in
+        # If a test config was passed in, load it
         app.config.from_mapping(test_config)
     else:
         # If not testing, load the instance config
         try:
             app.config.from_pyfile('config.py')
         except FileNotFoundError as e:
-            print(e)
-            print(f"See the top of file {__file__} for directions.")
-            raise
+            print('Configuration file not found. See README.md')
+            raise e
 
     # Legacy "v1" GET statement:
     @app.get('/api/v1/stations')
@@ -55,7 +55,7 @@ def create_app(test_config=None):
 
         # Cannot post too frequently
         last_post = db.get_last_seen(station_info['station_url'])
-        if last_post and station_info['last_seen'] - last_post < current_app.config.get("MIN_DELAY", 3600):
+        if last_post and station_info['last_seen'] - last_post < current_app.config.get("WEEREG_MIN_DELAY", 3600):
             return "Registering too frequently", 429
 
         db.insert_into_stations(station_info)
@@ -72,9 +72,10 @@ def create_app(test_config=None):
                     return "Specify 'max_age' or 'since', but not both", 400
                 since = int(request.args['since'])
             else:
-                max_age = duration(request.args.get('max_age', current_app.config.get("STATIONS_MAX_AGE", "30d")))
+                max_age = duration(request.args.get('max_age',
+                                                    current_app.config.get("WEEREG_STATIONS_MAX_AGE", "30d")))
                 since = time.time() - max_age
-            limit = int(request.args.get('limit', current_app.config.get("STATIONS_LIMIT", 2000)))
+            limit = int(request.args.get('limit', current_app.config.get("WEEREG_STATIONS_LIMIT", 2000)))
         except ValueError:
             return "Badly formed request", 400
 

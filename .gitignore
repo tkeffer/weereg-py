@@ -1,8 +1,6 @@
-# Default ignored files
-/shelf/
-/workspace.xml
-# Editor-based HTTP Client requests
-/httpRequests/
+# Ignore config.py so we don't accidentally commit user credentials
+config.py
+
 *~
 !/.idea
 /.idea/*
@@ -11,16 +9,5 @@
 .pydevproject
 .settings
 *.pyc
-build
-dist
-MANIFEST
-junk*
-*.sln
-*.user
-*.pyproj
-*.suo
-.DS_Store
-*.config
-*.egg-info
-.venv/*
+__pycache__
 venv/*

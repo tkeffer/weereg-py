@@ -1,30 +1,100 @@
 # weereg
 
+A Flask-based station registry.
+
 # Install
 
 ## Prerequisites
 - Python 3.6 or greater
 
-## Steps
+## Setting up weereg
 
-Change to the directory `weereg-py` is in, then
+You can set up weereg either as a development environment, or a production
+environment.
 
-```shell
-# Create a virtual environment
-python3 -m venv venv
-# Activate it
-source ./venv/bin/activate
-# Install dependencies:
-python3 -m pip install flask
-python3 -m pip install pymysql
+### Common elements
+This section has the steps common to both.
 
-# Create the database if necessary:
-python3 -m flask --app weereg init-db
+These steps sets up weereg under your home directory in `~/weereg-py`, but they
+can easily be modified to set it up someplace else.
 
-# Run the application:
-python3 -m flask --app weereg run
-```
+1. Clone into your user directory:
 
+    ```shell
+    cd ~
+    git clone https://github.com/tkeffer/weereg-py.git
+   
+    # cd into it for the rest of the steps
+    cd weereg-py
+    ```
+
+2. Copy the sample configuration file, then edit it.
+   DO NOT EDIT `config-sample.py`! It would be too easy to accidentally
+   include your credentials, then commit the file. Edit the copy!
+
+   ```shell
+   cp config-sample.py config.py
+   nano config.py
+   ```
+
+3. Set up the virtual environment:
+
+    ```shell
+    # Create a virtual environment
+    python3 -m venv venv
+    # Activate it
+    source ./venv/bin/activate
+    # Install dependencies:
+    python3 -m pip install wheel
+    python3 -m pip install flask
+    python3 -m pip install pymysql
+    python3 -m pip install gunicorn
+   ```
+
+4. If necessary, create and initialize the database:
+    
+   ```shell
+    # Create the database if necessary:
+    python3 -m flask --app weereg init-db
+    ```
+
+### Setting up a development environment
+
+To set up a development environment, follow the "Common" steps above,
+then simply run the application directly, using debug mode:
+
+ ```shell
+ # Run the application:
+ python3 -m flask --app weereg run --debug
+ ```
+
+
+### Setting up a production environment
+
+To set up a production environment, follow the "Common" steps above. We will
+then add some steps that will allow weereg to be run as a standalone WSGI
+application using the application server [gunicorn](https://gunicorn.org/).
+
+1. Create a systemd unit file called `weereg.service` with the following
+   contents, replacing `username` with your username.
+
+    ```unit file (systemd)
+    # File /etc/systemd/system/weereg.service
+    
+    [Unit]
+    Description=Gunicorn instance of weereg
+    After=network.target
+    
+    [Service]
+    User=username
+    Group=www-data
+    
+    WorkingDirectory=/home/username/weereg-py
+    ExecStart=/home/username/weereg-py/venv/bin/gunicorn --workers 3 --bind unix:weereg.sock -m 007 wsgi:weereg wsgi:weereg
+    
+    [Install]
+    WantedBy=multi-user.target
+    ```
 
 # V1 (Legacy) API
 
