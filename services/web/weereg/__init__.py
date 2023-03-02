@@ -39,9 +39,7 @@ from . import db
 
 def create_app(test_config=None):
     # create and configure the app
-    app = Flask(__name__,
-                instance_path=os.path.expanduser("~/weereg"),
-                instance_relative_config=True)
+    app = Flask(__name__)
     app.config.from_mapping(
         HOST='localhost',
         PORT=3306,

@@ -2,7 +2,7 @@
 FROM python:3.8-bullseye
 
 # set work directory
-WORKDIR /usr/src/app
+WORKDIR /usr/src/weereg
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -17,7 +17,7 @@ COPY ./requirements.txt /usr/src/app/requirements.txt
 RUN pip install -r requirements.txt
 
 # copy project
-COPY . /usr/src/app/
+COPY . /usr/src/weereg/
 
 # run entrypoint.sh
-ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+ENTRYPOINT ["/usr/src/weereg/entrypoint.sh"]
