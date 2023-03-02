@@ -48,6 +48,7 @@ can easily be modified to set it up someplace else.
     python3 -m pip install wheel
     python3 -m pip install flask
     python3 -m pip install pymysql
+    python3 -m pip install cryptography
     python3 -m pip install gunicorn
    ```
 
@@ -76,25 +77,41 @@ then add some steps that will allow weereg to be run as a standalone WSGI
 application using the application server [gunicorn](https://gunicorn.org/).
 
 1. Create a systemd unit file called `weereg.service` with the following
-   contents, replacing `username` with your username.
+   contents, replacing `username` with your username. When the app is running
+   it will be accessible at the socket `/home/username/weereg-py/weereg.sock`.
 
     ```unit file (systemd)
     # File /etc/systemd/system/weereg.service
     
     [Unit]
-    Description=Gunicorn instance of weereg
-    After=network.target
+       Description=Gunicorn instance of weereg
+       After=network.target
     
     [Service]
-    User=username
-    Group=www-data
-    
-    WorkingDirectory=/home/username/weereg-py
-    ExecStart=/home/username/weereg-py/venv/bin/gunicorn --workers 3 --bind unix:weereg.sock -m 007 wsgi:weereg wsgi:weereg
+       User=username
+       Group=www-data
+       
+       WorkingDirectory=/home/username/weereg-py
+       ExecStart=/home/username/weereg-py/venv/bin/gunicorn --workers 3 --bind unix:weereg.sock -m 007 wsgi:weereg
     
     [Install]
-    WantedBy=multi-user.target
+       WantedBy=multi-user.target
     ```
+
+2. Start and enable the service
+
+   ```shell
+   sudo systemctl start weereg
+   sudo systemctl enable weereg
+   ```
+   
+   The weereg application server will now be up and running, monitoring the
+   socket in the `weereg-py` directory.
+
+3. The next step is to set things up such that when a user tries to register a
+   station, the request gets forwarded to the weereg application server.
+
+
 
 # V1 (Legacy) API
 

@@ -10,17 +10,43 @@ See README.md for how to set up and use.
 
 import os.path
 import time
+from logging.config import dictConfig
 
 from flask import Flask, request, current_app
 
 from . import db
 
-parent_dir = os.path.join(os.path.dirname(__file__), '..')
+PARENT_DIR = os.path.join(os.path.dirname(__file__), '..')
+
+dictConfig({
+    'version': 1,
+    'formatters': {
+        'default': {
+            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+        }
+    },
+    'handlers': {
+        'rotate': {
+            'level': 'DEBUG',
+            'formatter': 'default',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/var/tmp/weereg.log',
+            'maxBytes': 1000000,
+            'backupCount': 4,
+        }
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': [
+            'rotate'
+        ]
+    }
+})
 
 
 def create_app(test_config=None):
     # create and configure the app
-    app = Flask(__name__, instance_path=parent_dir,
+    app = Flask(__name__, instance_path=PARENT_DIR,
                 instance_relative_config=True)
     # Set up useful defaults
     app.config.from_mapping(
@@ -42,7 +68,7 @@ def create_app(test_config=None):
             raise e
 
     # Legacy "v1" GET statement:
-    @app.get('/api/v1/stations')
+    @app.get('/api/v1/stations/')
     def add_station():
         """Add a station registration to the database."""
         station_info = request.args.to_dict()
@@ -51,18 +77,24 @@ def create_app(test_config=None):
 
         # We must have a station_url
         if 'station_url' not in station_info:
+            app.logger.info("Missing parameter station_url")
             return "Missing parameter station_url", 400
+
+        app.logger.info(f"Received registration from station {station_info['station_url']}")
 
         # Cannot post too frequently
         last_post = db.get_last_seen(station_info['station_url'])
-        if last_post and station_info['last_seen'] - last_post < current_app.config.get("WEEREG_MIN_DELAY", 3600):
-            return "Registering too frequently", 429
+        if last_post:
+            how_long = station_info['last_seen'] - last_post
+            if how_long < current_app.config.get("WEEREG_MIN_DELAY", 3600):
+                app.logger.info(f"Station {station_info['station_url']} is logging too frequently ({how_long}s).")
+                return "Registering too frequently", 429
 
         db.insert_into_stations(station_info)
 
         return "OK"
 
-    @app.get('/api/v2/stations')
+    @app.get('/api/v2/stations/')
     def get_stations():
         """Get all recent stations. """
 
