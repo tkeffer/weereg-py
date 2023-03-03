@@ -2,6 +2,8 @@
 import weereg
 import pprint
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 
 class PrintingMiddleware(object):
     """Useful for printing every request."""
@@ -22,8 +24,11 @@ class PrintingMiddleware(object):
 # Create the app.
 weereg = weereg.create_app()
 
-# Uncomment the following and run from the command line to print details about
-# every request:
+# Make sure it uses the proxied headers, but only one level deep.
+# See https://flask.palletsprojects.com/en/2.2.x/deploying/proxy_fix/
+weereg.wsgi_app = ProxyFix(weereg.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+# Uncomment the following to print details about every request:
 # weereg.wsgi_app = PrintingMiddleware(weereg.wsgi_app)
 
 if __name__ == '__main__':

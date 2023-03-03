@@ -108,17 +108,82 @@ application using the application server [gunicorn](https://gunicorn.org/).
    The weereg application server will now be up and running, monitoring the
    socket in the `weereg-py` directory.
 
-3. The next step is to set things up such that when a user tries to register a
-   station, the request gets forwarded to the weereg application server.
+### Set up a reverse proxy server
 
+In this section, we set up nginx as a reverse proxy server to the Gunicorn
+application server.
+
+Open the file `/etc/nginx/sites-available/default` in a text editor, using root
+privileges. Look inside the `server { ... }` context and identify the `location
+/` context. Underneath it, add four new `location` contexts so that when you're
+done, it looks something like the following:
+
+```nginx configuration
+server {
+
+     ... # Previous content
+     
+     location / {
+         # First attempt to serve request as file, then
+         # as directory, then fall back to displaying a 404.
+         try_files $uri $uri/ =404;
+     }
+     
+     # Add the following 4 "location" sections:
+     
+     # 1. Support legacy registrations by rewriting them to the weereg "v1" 
+     # API, then forwarding them to the weereg app server.
+     location /register/register.cgi {
+         rewrite ^/register/register.cgi /api/v1/stations/?$args last;
+     }
+
+      # 2, Forward V1 "GET" registrations to /api/v1 to the weereg app server.
+      # Deny all other methods.
+     location /api/v1/stations/ {
+         limit_except GET { deny all; }
+         include proxy_params;
+         proxy_pass http://unix:/home/tkeffer/git/tkeffer/weereg-py/weereg.sock;
+     }
+
+     # 3. Forward all V2 API requests to the app server.
+     location /api/v2/stations/ {
+         include proxy_params;
+         proxy_pass http://unix:/home/tkeffer/git/tkeffer/weereg-py/weereg.sock;
+     }
+     
+     # 4. POSTs to /api/v2/stations (no trailing slash) get rewritten AS GET,
+     # so just deny them completely. You must use the trailing slash.
+     location /api/v2/station {
+         deny all;
+     }
+     
+     ...
+}
+```
+
+1. If a registration comes in to `/register/register.cgi/?...`,
+   which is the old Perl-based station registry API, rewrite it so that it looks
+   like `/api/v1/stations/?...`.
+
+2. If a station registry comes in to the weereg v1 registry API, perhaps as a
+   result of the rewrite rule above, send it on to our Gunicorn-hosted
+   application server. Deny all other HTTP methods (such as `POST`).
+
+3. If a request comes in to the v2 API, forward it on to the application server.
+
+4. Finally, for reasons unknown to me, POSTs to `/api/v2/station`, with no
+   trailing slash, get forwarded by nginx as GETs. So, they show up on the 
+   application server as something like `GET /api/v2/station`, which the
+   server (rightly) interprets as a request for station data, not an attempt
+   at registration. So just deny all access to `/api/v2/station`.
 
 
 # V1 (Legacy) API
 
-## Post to station registry 
+## Register a station 
 
-This is the legacy API to post information about a station to the
-database. While it "posts", it actually uses an HTTP GET method.
+This is to support the legacy station registry, which uses an HTTP GET
+method to post to the database. 
 
 ```
 GET /api/v1/stations
@@ -196,6 +261,34 @@ Missing parameter station_url
 
 # V2 API
 
+## Register a station 
+
+This is the more modern method of using an HTTP POST method to register a
+station.
+
+```
+POST /api/v2/stations
+```
+
+**Parameters**
+
+None
+
+**JSON input**
+
+The body of the post should include a JSON structure with the station
+registry information as a dictionary. It must include a key `station_url`.
+
+**Response codes**
+
+| *Status* | *Meaning*                                           |
+|:---------|:----------------------------------------------------|
+| `200`    | Success                                             |
+| `400`    | Malformed post (usually from missing `station_url`) |
+| `429`    | Posting too frequently                              |
+
+
+
 ## Get active stations 
 
 Return the latest information about stations since some time ago.
@@ -214,14 +307,15 @@ GET /api/v2/stations
 
 NB: You can specify `since` or `max_age`, but not both.
 
-Results are returned in ascending order of `last_seen`.
-
 **Response codes**
 
 | *Status* | *Meaning*                                                              |
 |:---------|:-----------------------------------------------------------------------|
 | `200`    | Success                                                                |
 | `400`    | Badly formed request. Perhaps a character where a number was expected? |      
+
+If successful (`200`), the server will return the results as a JSON list of
+dictionaries, sorted in ascending order of `last_seen`.
 
 **Examples**
 
