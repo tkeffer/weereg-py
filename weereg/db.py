@@ -151,8 +151,8 @@ def gen_stations_since(since=0, limit=None):
     """
     limit = limit or 2000
 
-    conn = pymysql.connect(host='localhost', user='weewx', passwd='weewx', db='weereg')
-    with conn.cursor() as cursor:
+    db_conn = db.get_db()
+    with db_conn.cursor() as cursor:
         cursor.execute(STATIONS_SINCE_SQL, (since, limit))
         for result in cursor.fetchall():
             d = dict(zip(STATION_COLUMNS, result))
