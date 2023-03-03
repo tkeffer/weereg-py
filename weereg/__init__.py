@@ -97,7 +97,7 @@ def create_app(test_config=None):
         # We must have a station_url
         if 'station_url' not in station_info:
             app.logger.info("Missing parameter station_url")
-            return "Missing parameter station_url", 400
+            return "FAIL. Missing parameter station_url", 400
 
         app.logger.info(f"Received registration from station {station_info['station_url']}")
 
@@ -108,7 +108,7 @@ def create_app(test_config=None):
             if how_long < current_app.config.get("WEEREG_MIN_DELAY", 3600):
                 app.logger.info(f"Station {station_info['station_url']} is "
                                 f"logging too frequently ({how_long}s).")
-                return "Registering too frequently", 429
+                return "FAIL. Registering too frequently", 429
 
         db.insert_into_stations(station_info)
 
