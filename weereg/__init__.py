@@ -67,11 +67,30 @@ def create_app(test_config=None):
             print('Configuration file not found. See README.md')
             raise e
 
-    # Legacy "v1" GET statement:
+    # Legacy "v1", using GET method:
     @app.get('/api/v1/stations/')
-    def add_station():
+    def add_v1_station():
         """Add a station registration to the database."""
         station_info = request.args.to_dict()
+        return _register_station(station_info)
+
+    # V2 version, using POST method
+    @app.post('/api/v2/stations/')
+    def add_v2_station():
+        station_info = request.get_json()
+        return _register_station(station_info)
+
+    def _register_station(station_info):
+        """Register a station
+
+        Args:
+            station_info(dict): Holds the station information. The only required key
+                is 'station_url'.
+        Returns:
+            str|tuple: String 'OK' if successful, otherwise, a
+                tuple (error message, response code)
+        """
+
         station_info['last_seen'] = int(time.time() + 0.5)
         station_info['last_addr'] = request.remote_addr
 
@@ -87,7 +106,8 @@ def create_app(test_config=None):
         if last_post:
             how_long = station_info['last_seen'] - last_post
             if how_long < current_app.config.get("WEEREG_MIN_DELAY", 3600):
-                app.logger.info(f"Station {station_info['station_url']} is logging too frequently ({how_long}s).")
+                app.logger.info(f"Station {station_info['station_url']} is "
+                                f"logging too frequently ({how_long}s).")
                 return "Registering too frequently", 429
 
         db.insert_into_stations(station_info)
@@ -105,9 +125,11 @@ def create_app(test_config=None):
                 since = int(request.args['since'])
             else:
                 max_age = duration(request.args.get('max_age',
-                                                    current_app.config.get("WEEREG_STATIONS_MAX_AGE", "30d")))
+                                                    current_app.config.get(
+                                                        "WEEREG_STATIONS_MAX_AGE", "30d")))
                 since = time.time() - max_age
-            limit = int(request.args.get('limit', current_app.config.get("WEEREG_STATIONS_LIMIT", 2000)))
+            limit = int(request.args.get('limit',
+                                         current_app.config.get("WEEREG_STATIONS_LIMIT", 2000)))
         except ValueError:
             return "Badly formed request", 400
 
