@@ -77,8 +77,7 @@ then add some steps that will allow weereg to be run as a standalone WSGI
 application using the application server [gunicorn](https://gunicorn.org/).
 
 1. Create a systemd unit file called `weereg.service` with the following
-   contents, replacing `username` with your username. When the app is running
-   it will be accessible at the socket `/home/username/weereg-py/weereg.sock`.
+   contents, replacing `username` with your username:
 
     ```unit file (systemd)
     # File /etc/systemd/system/weereg.service
@@ -116,7 +115,8 @@ application server.
 Open the file `/etc/nginx/sites-available/default` in a text editor, using root
 privileges. Look inside the `server { ... }` context and identify the `location
 /` context. Underneath it, add four new `location` contexts so that when you're
-done, it looks something like the following:
+done, it looks something like the following. Again, `username` should be 
+replaced by the username used above.
 
 ```nginx configuration
 server {
@@ -142,13 +142,13 @@ server {
      location /api/v1/stations/ {
          limit_except GET { deny all; }
          include proxy_params;
-         proxy_pass http://unix:/home/tkeffer/git/tkeffer/weereg-py/weereg.sock;
+         proxy_pass http://unix:/home/username/weereg-py/weereg.sock;
      }
 
      # 3. Forward all V2 API requests to the app server.
      location /api/v2/stations/ {
          include proxy_params;
-         proxy_pass http://unix:/home/tkeffer/git/tkeffer/weereg-py/weereg.sock;
+         proxy_pass http://unix:/home/username/weereg-py/weereg.sock;
      }
      
      # 4. POSTs to /api/v2/stations (no trailing slash) get rewritten AS GET,
