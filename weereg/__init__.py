@@ -180,7 +180,7 @@ def check_station(app, station_info):
         how_long = station_info['last_seen'] - last_post
         if how_long < current_app.config.get("WEEREG_MIN_DELAY", 3600):
             app.logger.info(f"Station {station_info['station_url']} is "
-                            f"logging too frequently ({how_long}s).")
+                            f"registering too frequently ({how_long}s).")
             return "FAIL. Registering too frequently", 429
 
     # latitude and longitude have to exist, be convertible to floats, and be in a valid range
