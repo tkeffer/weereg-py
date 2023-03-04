@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 import os.path
 import re
@@ -15,6 +15,7 @@ import time
 from logging.config import dictConfig
 
 from flask import Flask, request, current_app
+import validators.url
 
 from . import db
 
@@ -154,12 +155,14 @@ def sanitize_station(station_info):
 def check_station(app, station_info):
     """Perform some basic data quality checks on a station."""
 
-    # We must have a station_url
+    # Check station_url. First, we must have one...
     if 'station_url' not in station_info:
         app.logger.info("Missing parameter station_url")
         return "FAIL. Missing parameter station_url", 400
-
-    # No silly station_urls
+    # ... it must be valid ...
+    if not validators.url(station_info['station_url']):
+        return "FAIL. Invalid station_url", 400
+    # ... and not use a silly name.
     for reject in ('weewx.com', 'example.com', 'register.cgi'):
         if reject in station_info['station_url']:
             return f"FAIL. {station_info['station_url']} is not a valid station_url", 400
@@ -173,11 +176,14 @@ def check_station(app, station_info):
                             f"logging too frequently ({how_long}s).")
             return "FAIL. Registering too frequently", 429
 
-    # latitude and longitude have to exist, and be convertible into floats
+    # latitude and longitude have to exist, be convertible to floats, and be in a valid range
     try:
-        float(station_info['latitude']) and float(station_info['longitude'])
+        lat = float(station_info['latitude'])
+        lon = float(station_info['longitude'])
     except (ValueError, KeyError):
         return "FAIL. Missing or badly formed latitude or longitude", 400
+    if not -90 <= lat <= 90 or not -180 <= lon <= 180:
+        return "FAIL. Latitude or longitude out of range", 400
 
 
 def duration(val):

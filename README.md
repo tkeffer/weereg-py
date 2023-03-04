@@ -50,6 +50,7 @@ can easily be modified to set it up someplace else.
     python3 -m pip install pymysql
     python3 -m pip install cryptography
     python3 -m pip install gunicorn
+    python3 -m pip install validators
    ```
 
 4. If necessary, create and initialize the database:
