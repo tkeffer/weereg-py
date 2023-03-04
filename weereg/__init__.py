@@ -139,7 +139,8 @@ def sanitize_station(station_info):
 
     # Get rid of carriage returns and newlines.
     for key in station_info:
-        station_info[key] = station_info[key].strip().replace("\n", "").replace("\r", "")
+        if isinstance(station_info[key], str):
+            station_info[key] = station_info[key].strip().replace("\n", "").replace("\r", "")
 
     if 'station_model' in station_info:
         # Salvage the driver name out of any "bound method" station models.
