@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 
 import os.path
 import re
@@ -138,10 +138,15 @@ def create_app(test_config=None):
 def sanitize_station(station_info):
     """Correct any obvious errors in the station information"""
 
-    # Get rid of carriage returns and newlines.
+    # Get rid of carriage returns, newlines, and double-quotes. Single quotes are OK,
+    # because they might be part of a name (e.g., Land's End).
     for key in station_info:
         if isinstance(station_info[key], str):
-            station_info[key] = station_info[key].strip().replace("\n", "").replace("\r", "")
+            station_info[key] = station_info[key]\
+                .strip()\
+                .replace("\n", "")\
+                .replace("\r", "")\
+                .replace('"', "")
 
     if 'station_model' in station_info:
         # Salvage the driver name out of any "bound method" station models.

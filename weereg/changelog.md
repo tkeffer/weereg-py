@@ -1,6 +1,11 @@
 weereg change history
 --------------------
 
+### 1.3.1 04-mar-2023
+
+Filter out double quotes.
+
+
 ### 1.3.0 04-mar-2023
 
 Install using a `requirements.txt` file.
