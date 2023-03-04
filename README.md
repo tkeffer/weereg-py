@@ -45,12 +45,7 @@ can easily be modified to set it up someplace else.
     # Activate it
     source ./venv/bin/activate
     # Install dependencies:
-    python3 -m pip install wheel
-    python3 -m pip install flask
-    python3 -m pip install pymysql
-    python3 -m pip install cryptography
-    python3 -m pip install gunicorn
-    python3 -m pip install validators
+    python3 -m pip install -r requirements.txt
    ```
 
 4. If necessary, create and initialize the database:
