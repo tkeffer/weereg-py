@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 import os.path
 import re
@@ -161,10 +161,12 @@ def check_station(app, station_info):
         return "FAIL. Missing parameter station_url", 400
     # ... it must be valid ...
     if not validators.url(station_info['station_url']):
+        app.logger.info(f"Invalid station_url {station_info['station_url']}")
         return "FAIL. Invalid station_url", 400
     # ... and not use a silly name.
     for reject in ('weewx.com', 'example.com', 'register.cgi'):
         if reject in station_info['station_url']:
+            app.logger.info(f"Silly station_url {station_info['station_url']}")
             return f"FAIL. {station_info['station_url']} is not a valid station_url", 400
 
     # Cannot post too frequently
