@@ -7,9 +7,10 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 import os.path
+import re
 import time
 from logging.config import dictConfig
 
@@ -95,21 +96,12 @@ def create_app(test_config=None):
         station_info['last_seen'] = int(time.time() + 0.5)
         station_info['last_addr'] = request.remote_addr
 
-        # We must have a station_url
-        if 'station_url' not in station_info:
-            app.logger.info("Missing parameter station_url")
-            return "FAIL. Missing parameter station_url", 400
+        station_info = sanitize_station(station_info)
+        check = check_station(app, station_info)
+        if check:
+            return check
 
         app.logger.info(f"Received registration from station {station_info['station_url']}")
-
-        # Cannot post too frequently
-        last_post = db.get_last_seen(station_info['station_url'])
-        if last_post:
-            how_long = station_info['last_seen'] - last_post
-            if how_long < current_app.config.get("WEEREG_MIN_DELAY", 3600):
-                app.logger.info(f"Station {station_info['station_url']} is "
-                                f"logging too frequently ({how_long}s).")
-                return "FAIL. Registering too frequently", 429
 
         db.insert_into_stations(station_info)
 
@@ -140,6 +132,51 @@ def create_app(test_config=None):
     db.init_app(app)
 
     return app
+
+
+def sanitize_station(station_info):
+    """Correct any obvious errors in the station information"""
+
+    # Get rid of carriage returns and newlines.
+    for key in station_info:
+        station_info[key] = station_info[key].strip().replace("\n", "").replace("\r", "")
+
+    if 'station_model' in station_info:
+        # Salvage the driver name out of any "bound method" station models.
+        match = re.search(r"bound method (\w+)[. ]", station_info['station_model'])
+        if match:
+            station_info['station_model'] = match.group(1)
+
+    return station_info
+
+
+def check_station(app, station_info):
+    """Perform some basic data quality checks on a station."""
+
+    # We must have a station_url
+    if 'station_url' not in station_info:
+        app.logger.info("Missing parameter station_url")
+        return "FAIL. Missing parameter station_url", 400
+
+    # No silly station_urls
+    for reject in ('weewx.com', 'example.com', 'register.cgi'):
+        if reject in station_info['station_url']:
+            return f"FAIL. {station_info['station_url']} is not a valid station_url", 400
+
+    # Cannot post too frequently
+    last_post = db.get_last_seen(station_info['station_url'])
+    if last_post:
+        how_long = station_info['last_seen'] - last_post
+        if how_long < current_app.config.get("WEEREG_MIN_DELAY", 3600):
+            app.logger.info(f"Station {station_info['station_url']} is "
+                            f"logging too frequently ({how_long}s).")
+            return "FAIL. Registering too frequently", 429
+
+    # latitude and longitude have to exist, and be convertible into floats
+    try:
+        float(station_info['latitude']) and float(station_info['longitude'])
+    except (ValueError, KeyError):
+        return "FAIL. Missing or badly formed latitude or longitude", 400
 
 
 def duration(val):
