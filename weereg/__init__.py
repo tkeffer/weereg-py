@@ -7,6 +7,7 @@
 
 See README.md for how to set up and use.
 """
+__version__ = "1.0.0"
 
 import os.path
 import time
