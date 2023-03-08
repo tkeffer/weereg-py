@@ -1,6 +1,6 @@
 # weereg
 
-A Flask-based station registry.
+A Flask-based station registry for WeeWX.
 
 # Install
 
@@ -9,7 +9,7 @@ A Flask-based station registry.
 
 ## Setting up weereg
 
-You can set up weereg either as a development environment, or a production
+You can set up weereg either as a development environment, or as a production
 environment.
 
 ### Common elements
@@ -46,7 +46,7 @@ can easily be modified to set it up someplace else.
     source ./venv/bin/activate
     # Install dependencies:
     python3 -m pip install -r requirements.txt
-   ```
+    ```
 
 4. If necessary, create and initialize the database:
     
@@ -73,7 +73,7 @@ then add some steps that will allow weereg to be run as a standalone WSGI
 application using the application server [gunicorn](https://gunicorn.org/).
 
 1. Create a systemd unit file called `weereg.service` with the following
-   contents, replacing `username` with your username:
+   contents. Be sure to replace `username` with your username:
 
     ```unit file (systemd)
     # File /etc/systemd/system/weereg.service
@@ -100,7 +100,7 @@ application using the application server [gunicorn](https://gunicorn.org/).
    sudo systemctl enable weereg
    ```
    
-   The weereg application server will now be up and running, monitoring the
+   The weereg application server will now be up and running, monitoring a
    socket in the `weereg-py` directory.
 
 ### Set up a reverse proxy server
@@ -128,13 +128,13 @@ server {
      # Add the following 4 "location" sections:
      
      # 1. Support legacy registrations by rewriting them to the weereg "v1" 
-     # API, then forwarding them to the weereg app server.
+     #    API, then forwarding them to the weereg app server.
      location /register/register.cgi {
          rewrite ^/register/register.cgi /api/v1/stations/?$args last;
      }
 
-      # 2, Forward V1 "GET" registrations to /api/v1 to the weereg app server.
-      # Deny all other methods.
+     # 2. Forward V1 "GET" registrations to /api/v1 to the weereg app server.
+     #    Deny all other methods.
      location /api/v1/stations/ {
          limit_except GET { deny all; }
          include proxy_params;
@@ -148,7 +148,7 @@ server {
      }
      
      # 4. POSTs to /api/v2/stations (no trailing slash) get rewritten AS GET,
-     # so just deny them completely. You must use the trailing slash.
+     #    so just deny them completely.
      location /api/v2/station {
          deny all;
      }
