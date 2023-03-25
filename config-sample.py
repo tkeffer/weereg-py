@@ -12,7 +12,8 @@ WEEREG_MYSQL_USER='weewx'
 WEEREG_MYSQL_PASSWORD='weewx'
 
 # How often a station can post.
-WEEREG_MIN_DELAY=3600 * 24    # = once per day
+# It should be slightly less than client's post_interval.
+WEEREG_MIN_DELAY=3600 * 23
 
 # Configuration for method GET /api/v2/stations
 WEEREG_STATIONS_MAX_AGE=3600 * 24 * 30   # = One month

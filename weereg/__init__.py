@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 import os.path
 import re
@@ -178,7 +178,7 @@ def check_station(app, station_info):
     last_post = db.get_last_seen(station_info['station_url'])
     if last_post:
         how_long = station_info['last_seen'] - last_post
-        if how_long < current_app.config.get("WEEREG_MIN_DELAY", 3600):
+        if how_long < current_app.config.get("WEEREG_MIN_DELAY", 23 * 3600):
             app.logger.info(f"Station {station_info['station_url']} is "
                             f"registering too frequently ({how_long}s).")
             return "FAIL. Registering too frequently", 429

@@ -1,6 +1,10 @@
 weereg change history
 --------------------
 
+### 1.3.2 24-mar-2023
+
+Change how often a client can post from once an hour, to once every 23 hours.
+
 ### 1.3.1 04-mar-2023
 
 Filter out double quotes.
