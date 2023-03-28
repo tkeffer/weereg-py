@@ -12,7 +12,7 @@ __version__ = "1.3.2"
 import os.path
 import re
 import time
-from logging.config import dictConfig
+import logging.config
 
 from flask import Flask, request, current_app
 import validators.url
@@ -20,32 +20,6 @@ import validators.url
 from . import db
 
 PARENT_DIR = os.path.join(os.path.dirname(__file__), '..')
-
-dictConfig({
-    'version': 1,
-    'formatters': {
-        'default': {
-            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
-        }
-    },
-    'handlers': {
-        'rotate': {
-            'level': 'DEBUG',
-            'formatter': 'default',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/tmp/weereg.log',
-            'maxBytes': 1000000,
-            'backupCount': 4,
-        }
-    },
-    'root': {
-        'level': 'DEBUG',
-        'handlers': [
-            'rotate'
-        ]
-    }
-})
-
 
 def create_app(test_config=None):
     # create and configure the app
@@ -69,6 +43,8 @@ def create_app(test_config=None):
         except FileNotFoundError as e:
             print('Configuration file not found. See README.md')
             raise e
+
+    logging.config.dictConfig(app.config.get('WEEREG_LOGGING'))
 
     # Legacy "v1", using GET method:
     @app.get('/api/v1/stations/')

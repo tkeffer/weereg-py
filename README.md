@@ -15,10 +15,10 @@ environment.
 ### Common elements
 This section has the steps common to both.
 
-These steps sets up weereg under your home directory in `~/weereg-py`, but they
-can easily be modified to set it up someplace else.
+These steps assume the weereg code will be in your home directory in 
+`~/weereg-py`, but they can easily be modified to set it up someplace else.
 
-1. Clone into your user directory:
+1. Clone weereg into your user directory:
 
     ```shell
     cd ~
@@ -70,9 +70,32 @@ then simply run the application directly, using debug mode:
 
 To set up a production environment, follow the "Common" steps above. We will
 then add some steps that will allow weereg to be run as a standalone WSGI
-application using the application server [gunicorn](https://gunicorn.org/).
+application using the application server [gunicorn](https://gunicorn.org/),
+with appropriate permissions.
 
-1. Create a systemd unit file called `weereg.service` with the following
+1. Create a location where we will have write privileges to create the socket we 
+   will use to communicate between nginx and the application server:
+   ```
+   sudo mkdir /run/weereg
+   sudo chown www-data:www-data /run/weereg
+   ```
+
+2. Create a location where we will have write privileges for the log:
+   ```
+   sudo mkdir /var/log/weereg
+   sudo chown www-data:www-data /var/log/weereg
+   ```
+
+3. Edit the configuration file `config.py` to reflect the new location of the 
+   log. Change
+ 
+       'filename': '/var/tmp/weereg.log',
+
+   to   
+
+        'filename': '/var/log/weereg/weereg.log',
+   
+4. Create a systemd unit file called `weereg.service` with the following
    contents. Be sure to replace `username` with your username:
 
     ```unit file (systemd)
@@ -83,25 +106,31 @@ application using the application server [gunicorn](https://gunicorn.org/).
        After=network.target
     
     [Service]
-       User=username
+       User=www-data
        Group=www-data
        
        WorkingDirectory=/home/username/weereg-py
-       ExecStart=/home/username/weereg-py/venv/bin/gunicorn --workers 3 --bind unix:weereg.sock -m 007 wsgi:weereg
+       ExecStart=/home/username/weereg-py/venv/bin/gunicorn --workers 3 --bind unix:/run/weereg/weereg.sock -m 007 wsgi:weereg
     
     [Install]
        WantedBy=multi-user.target
     ```
 
-2. Start and enable the service
+5. Reread the service files
+   ```
+   sudo systemctl daemon-reload
+   ```
+   
+6. Start and enable the service
 
    ```shell
    sudo systemctl start weereg
    sudo systemctl enable weereg
    ```
    
-   The weereg application server will now be up and running, monitoring a
-   socket in the `weereg-py` directory.
+The weereg application server will now be up and running, monitoring a
+socket in the directory `/run/weereg`. Its log will be written to
+`/var/log/weereg/weereg.log`.
 
 ### Set up a reverse proxy server
 
@@ -110,9 +139,8 @@ application server.
 
 Open the file `/etc/nginx/sites-available/default` in a text editor, using root
 privileges. Look inside the `server { ... }` context and identify the `location
-/` context. Underneath it, add four new `location` contexts so that when you're
-done, it looks something like the following. Again, `username` should be 
-replaced by the username used above.
+/` context. Underneath it, add three new `location` contexts so that when you're
+done, it looks something like the following.
 
 ```nginx configuration
 server {
@@ -125,7 +153,7 @@ server {
          try_files $uri $uri/ =404;
      }
      
-     # Add the following 4 "location" sections:
+     # Add the following 3 "location" sections:
      
      # 1. Support legacy registrations by rewriting them to the weereg "v1" 
      #    API. They will then get forwarded to the weereg app server.
@@ -138,18 +166,20 @@ server {
      location /api/v1/stations/ {
          limit_except GET { deny all; }
          include proxy_params;
-         proxy_pass http://unix:/home/username/weereg-py/weereg.sock;
+         proxy_pass http://unix:/run/weereg/weereg.sock;
      }
 
      # 3. Forward all V2 API requests to the app server.
      location /api/v2/stations {
          include proxy_params;
-         proxy_pass http://unix:/home/username/weereg-py/weereg.sock;
+         proxy_pass http://unix:/run/weereg/weereg.sock;
      }
      
      ...
 }
 ```
+
+Here's what the three new sections mean:
 
 1. If a registration comes in to `/register/register.cgi/?...`,
    which is the old Perl-based station registry API, rewrite it so that it looks
@@ -162,6 +192,12 @@ server {
 3. If a request comes in to the v2 API, forward it on to the application server.
    The lack of a trailing slash on `/api/v2/stations` is important. It allows
    matches to both `/api/v2/stations` and `/api/v2/stations/`.
+
+When you're done, restart the nginx server.
+
+```
+sudo systemctl restart nginx
+```
 
 # V1 (Legacy) API
 
