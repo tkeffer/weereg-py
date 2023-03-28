@@ -128,7 +128,7 @@ server {
      # Add the following 4 "location" sections:
      
      # 1. Support legacy registrations by rewriting them to the weereg "v1" 
-     #    API, then forwarding them to the weereg app server.
+     #    API. They will then get forwarded to the weereg app server.
      location /register/register.cgi {
          rewrite ^/register/register.cgi /api/v1/stations/?$args last;
      }
@@ -142,15 +142,9 @@ server {
      }
 
      # 3. Forward all V2 API requests to the app server.
-     location /api/v2/stations/ {
+     location /api/v2/stations {
          include proxy_params;
          proxy_pass http://unix:/home/username/weereg-py/weereg.sock;
-     }
-     
-     # 4. POSTs to /api/v2/stations (no trailing slash) get rewritten AS GET,
-     #    so just deny them completely.
-     location /api/v2/station {
-         deny all;
      }
      
      ...
@@ -166,13 +160,8 @@ server {
    application server. Deny all other HTTP methods (such as `POST`).
 
 3. If a request comes in to the v2 API, forward it on to the application server.
-
-4. Finally, for reasons unknown to me, POSTs to `/api/v2/station`, with no
-   trailing slash, get forwarded by nginx as GETs. So, they show up on the 
-   application server as something like `GET /api/v2/station`, which the
-   server (rightly) interprets as a request for station data, not an attempt
-   at registration. So just deny all access to `/api/v2/station`.
-
+   The lack of a trailing slash on `/api/v2/stations` is important. It allows
+   matches to both `/api/v2/stations` and `/api/v2/stations/`.
 
 # V1 (Legacy) API
 
