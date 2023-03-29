@@ -71,7 +71,7 @@ then simply run the application directly, using debug mode:
 To set up a production environment, follow the "Common" steps above. We will
 then add some steps that will allow weereg to be run as a standalone WSGI
 application using the application server [gunicorn](https://gunicorn.org/),
-with appropriate permissions.
+proxied by an nginx server.
 
 1. Create a location where we will have write privileges to create the socket we 
    will use to communicate between nginx and the application server:
@@ -130,7 +130,7 @@ with appropriate permissions.
    
 The weereg application server will now be up and running, monitoring a
 socket in the directory `/run/weereg`. Its log will be written to
-`/var/log/weereg/weereg.log`.
+`/var/log/weereg/weereg.log`. It will be running as user `www-data`.
 
 ### Set up a reverse proxy server
 
