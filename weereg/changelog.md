@@ -1,6 +1,10 @@
 weereg change history
 --------------------
 
+### 1.4.0 10-apr-2023
+
+New stations kick off a screen capture.
+
 ### 1.3.2 24-mar-2023
 
 Change how often a client can post from once an hour, to once every 23 hours.

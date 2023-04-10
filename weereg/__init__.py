@@ -7,19 +7,29 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.3.2"
+__version__ = "1.4.0"
 
+import logging.config
 import os.path
 import re
+import subprocess
 import time
-import logging.config
+from dataclasses import dataclass
 
-from flask import Flask, request, current_app
 import validators.url
+from flask import Flask, request, current_app
 
 from . import db
 
+
+@dataclass
+class RejectStation(Exception):
+    reason: str
+    code: int
+
+
 PARENT_DIR = os.path.join(os.path.dirname(__file__), '..')
+
 
 def create_app(test_config=None):
     # create and configure the app
@@ -74,13 +84,26 @@ def create_app(test_config=None):
         station_info['last_addr'] = request.remote_addr
 
         station_info = sanitize_station(station_info)
-        check = check_station(app, station_info)
-        if check:
-            return check
+        try:
+            last_seen = check_station(app, station_info)
+        except RejectStation as eject:
+            return eject.reason, eject.code
 
         app.logger.info(f"Received registration from station {station_info['station_url']}")
 
         db.insert_into_stations(station_info)
+
+        # If the staton has never been seen before, do a screen capture.
+        if not last_seen:
+            # Be prepared to catch an exception in case the capture-one shell doesn't exist:
+            try:
+                # Do the capture. This is non-blocking, so we don't have to wait around for it.
+                subprocess.Popen(["/var/www/html/register/capture-one.sh",
+                                  station_info['station_url']])
+                app.logger.info(f"Kicked off screen capture "
+                                f"for station{station_info['station_url']}")
+            except FileNotFoundError:
+                app.logger.error("Could not find screen capture app")
 
         return "OK"
 
@@ -118,10 +141,10 @@ def sanitize_station(station_info):
     # because they might be part of a name (e.g., Land's End).
     for key in station_info:
         if isinstance(station_info[key], str):
-            station_info[key] = station_info[key]\
-                .strip()\
-                .replace("\n", "")\
-                .replace("\r", "")\
+            station_info[key] = station_info[key] \
+                .strip() \
+                .replace("\n", "") \
+                .replace("\r", "") \
                 .replace('"', "")
 
     if 'station_model' in station_info:
@@ -134,21 +157,42 @@ def sanitize_station(station_info):
 
 
 def check_station(app, station_info):
-    """Perform some basic data quality checks on a station."""
+    """Perform some basic quality checks on a station.
+
+    Args:
+        app (Flask): A flask application object
+        station_info (dict): Station information from the client
+
+    Returns:
+        float|None: The last time the station was seen, or None if it has never been seen.
+
+    Raises:
+        RejectStation: If the station fails any validations.
+    """
 
     # Check station_url. First, we must have one...
     if 'station_url' not in station_info:
         app.logger.info("Missing parameter station_url")
-        return "FAIL. Missing parameter station_url", 400
+        raise RejectStation("FAIL. Missing parameter station_url", 400)
     # ... it must be valid ...
     if not validators.url(station_info['station_url']):
         app.logger.info(f"Invalid station_url {station_info['station_url']}")
-        return "FAIL. Invalid station_url", 400
+        raise RejectStation("FAIL. Invalid station_url", 400)
     # ... and not use a silly name.
     for reject in ('weewx.com', 'example.com', 'register.cgi'):
         if reject in station_info['station_url']:
             app.logger.info(f"Silly station_url {station_info['station_url']}")
-            return f"FAIL. {station_info['station_url']} is not a valid station_url", 400
+            raise RejectStation(f"FAIL. {station_info['station_url']} is not a valid station_url",
+                                400)
+
+    # latitude and longitude have to exist, be convertible to floats, and be in a valid range
+    try:
+        lat = float(station_info['latitude'])
+        lon = float(station_info['longitude'])
+    except (ValueError, KeyError):
+        raise RejectStation("FAIL. Missing or badly formed latitude or longitude", 400)
+    if not -90 <= lat <= 90 or not -180 <= lon <= 180:
+        raise RejectStation("FAIL. Latitude or longitude out of range", 400)
 
     # Cannot post too frequently
     last_post = db.get_last_seen(station_info['station_url'])
@@ -157,16 +201,9 @@ def check_station(app, station_info):
         if how_long < current_app.config.get("WEEREG_MIN_DELAY", 23 * 3600):
             app.logger.info(f"Station {station_info['station_url']} is "
                             f"registering too frequently ({how_long}s).")
-            return "FAIL. Registering too frequently", 429
+            raise RejectStation("FAIL. Registering too frequently", 429)
 
-    # latitude and longitude have to exist, be convertible to floats, and be in a valid range
-    try:
-        lat = float(station_info['latitude'])
-        lon = float(station_info['longitude'])
-    except (ValueError, KeyError):
-        return "FAIL. Missing or badly formed latitude or longitude", 400
-    if not -90 <= lat <= 90 or not -180 <= lon <= 180:
-        return "FAIL. Latitude or longitude out of range", 400
+    return last_post
 
 
 def duration(val):

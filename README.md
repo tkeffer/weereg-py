@@ -65,6 +65,7 @@ then simply run the application directly, using debug mode:
  python3 -m flask --app weereg run --debug
  ```
 
+The flask application will now be up and running, and monitoring port 5000.
 
 ### Setting up a production environment
 
