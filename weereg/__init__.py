@@ -101,7 +101,7 @@ def create_app(test_config=None):
                 subprocess.Popen(["/var/www/html/register/capture-one.sh",
                                   station_info['station_url']])
                 app.logger.info(f"Kicked off screen capture "
-                                f"for station{station_info['station_url']}")
+                                f"for station {station_info['station_url']}")
             except FileNotFoundError:
                 app.logger.error("Could not find screen capture app")
 
