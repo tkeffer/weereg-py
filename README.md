@@ -74,20 +74,13 @@ then add some steps that will allow weereg to be run as a standalone WSGI
 application using the application server [gunicorn](https://gunicorn.org/),
 proxied by an nginx server.
 
-1. Create a location where we will have write privileges to create the socket we 
-   will use to communicate between nginx and the application server:
-   ```
-   sudo mkdir /run/weereg
-   sudo chown www-data:www-data /run/weereg
-   ```
-
-2. Create a location where we will have write privileges for the log:
+1. Create a location where we will have write privileges for the log:
    ```
    sudo mkdir /var/log/weereg
    sudo chown www-data:www-data /var/log/weereg
    ```
 
-3. Edit the configuration file `config.py` to reflect the new location of the 
+2. Edit the configuration file `config.py` to reflect the new location of the 
    log. Change
  
        'filename': '/var/tmp/weereg.log',
@@ -96,7 +89,7 @@ proxied by an nginx server.
 
         'filename': '/var/log/weereg/weereg.log',
    
-4. Create a systemd unit file called `weereg.service` with the following
+3. Create a systemd unit file called `weereg.service` with the following
    contents. Be sure to replace `username` with your username:
 
     ```unit file (systemd)
@@ -111,18 +104,19 @@ proxied by an nginx server.
        Group=www-data
        
        WorkingDirectory=/home/username/weereg-py
+       RuntimeDirectory=weereg
        ExecStart=/home/username/weereg-py/venv/bin/gunicorn --workers 3 --bind unix:/run/weereg/weereg.sock -m 007 wsgi:weereg
     
     [Install]
        WantedBy=multi-user.target
     ```
 
-5. Reread the service files
+4. Reread the service files
    ```
    sudo systemctl daemon-reload
    ```
    
-6. Start and enable the service
+5. Start and enable the service
 
    ```shell
    sudo systemctl start weereg
