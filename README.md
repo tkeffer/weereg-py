@@ -98,6 +98,7 @@ proxied by an nginx server.
     [Unit]
        Description=Gunicorn instance of weereg
        After=network.target
+       After=mysql.service
     
     [Service]
        User=www-data
