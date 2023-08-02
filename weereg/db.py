@@ -61,8 +61,8 @@ def init_db():
     with current_app.open_resource('stations_schema.sql') as fd:
         contents = fd.read().decode('utf8')
 
-    # The schema can consist of several SQL statements. Split on the semicolon. Get rid of any resultant empty
-    # statements. Add the semicolon back in.
+    # The schema can consist of several SQL statements. Split on the semicolon.
+    # Get rid of any resultant empty statements. Add the semicolon back in.
     queries = ["%s;" % q.strip() for q in contents.split(';') if q.strip()]
 
     # Now execute them one by one
@@ -116,7 +116,8 @@ def get_last_seen(station_url):
     """
     db_conn = db.get_db()
     with db_conn.cursor() as cursor:
-        cursor.execute('SELECT last_seen FROM weereg.stations WHERE station_url=%s ORDER BY last_seen DESC LIMIT 1',
+        cursor.execute('SELECT last_seen FROM weereg.stations WHERE station_url=%s '
+                       'ORDER BY last_seen DESC LIMIT 1',
                        station_url)
         result = cursor.fetchone()
         last_seen = result[0] if result else None
