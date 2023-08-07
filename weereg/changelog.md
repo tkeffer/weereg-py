@@ -1,6 +1,12 @@
 weereg change history
 --------------------
 
+### 1.4.1 7-aug-2023
+
+Change SQL column `last_addr` to 44 characters to accommodate IPv6.
+Record `last_addr` in log.
+
+
 ### 1.4.0 10-apr-2023
 
 New stations kick off a screen capture.

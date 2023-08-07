@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 
 import logging.config
 import os.path
@@ -89,7 +89,8 @@ def create_app(test_config=None):
         except RejectStation as eject:
             return eject.reason, eject.code
 
-        app.logger.info(f"Received registration from station {station_info['station_url']}")
+        app.logger.info(f"Received registration from station {station_info['station_url']} "
+                        f"({station_info['last_addr']}).")
 
         db.insert_into_stations(station_info)
 
