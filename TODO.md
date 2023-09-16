@@ -1,2 +1,2 @@
-Allow API method /api/v2/stations to specify which fields are to be returned,
-instead of all of them.
+Implement a blacklist to filter out bad stations. It would consist of keys,
+such as `station_url`, and values to be filtered out.
