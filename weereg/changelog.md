@@ -1,6 +1,12 @@
 weereg change history
 --------------------
 
+### 1.5.0 23-sep-2023
+
+Kick off screen capture in a separate thread with a timeout. This avoids
+zombie processes.
+
+
 ### 1.4.1 7-aug-2023
 
 Change SQL column `last_addr` to 44 characters to accommodate IPv6.

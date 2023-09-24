@@ -112,7 +112,7 @@ def get_last_seen(station_url):
         station_url(str): The unique URL for the station.
 
     Returns:
-        int: Time it was last seen in unix epoch time.
+        int|None: Time it was last seen in unix epoch time, or None if it has never been seen.
     """
     db_conn = db.get_db()
     with db_conn.cursor() as cursor:

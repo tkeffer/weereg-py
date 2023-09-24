@@ -7,12 +7,13 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.4.1"
+__version__ = "1.5.0"
 
 import logging.config
 import os.path
 import re
 import subprocess
+import threading
 import time
 from dataclasses import dataclass
 
@@ -90,23 +91,39 @@ def create_app(test_config=None):
             return eject.reason, eject.code
 
         app.logger.info(f"Received registration from station {station_info['station_url']} "
-                        f"({station_info['last_addr']}).")
+                        f"({station_info['last_addr']})")
 
         db.insert_into_stations(station_info)
 
         # If the staton has never been seen before, do a screen capture.
         if not last_seen:
-            # Be prepared to catch an exception in case the capture-one shell doesn't exist:
-            try:
-                # Do the capture. This is non-blocking, so we don't have to wait around for it.
-                subprocess.Popen(["/var/www/html/register/capture-one.sh",
-                                  station_info['station_url']])
-                app.logger.info(f"Kicked off screen capture "
-                                f"for station {station_info['station_url']}")
-            except FileNotFoundError:
-                app.logger.error("Could not find screen capture app")
+            _capture_station(station_info['station_url'],
+                             app.config.get('SCREEN_CAPTURE_TIMEOUT'))
 
         return "OK"
+
+    def _capture_station(station_url, timeout=None):
+        # Timeout defaults to 180 seconds
+        timeout = timeout or 180
+
+        def _do_capture():
+            # Be prepared to catch an exception in case the capture-one shell doesn't exist, or
+            # the process times out.
+            try:
+                # Run the capture shell command. If it times out, a TimeoutError will be raised.
+                subprocess.run("/var/www/html/register/capture-one.sh", station_url,
+                               timeout=timeout)
+                app.logger.info(f"Kicked off screen capture for station {station_url}")
+            except FileNotFoundError:
+                app.logger.error("Could not find screen capture app")
+            except TimeoutError:
+                app.logger.error(f"Screen capture for station {station_url} timed "
+                                 f"out after {timeout} seconds")
+
+        thread = threading.Thread(target=_do_capture)
+        # Start the thread, but don't wait around to 'join' it. We don't care if it succeeds
+        # or fails.
+        thread.start()
 
     @app.get('/api/v2/stations/')
     def get_stations():
@@ -201,7 +218,7 @@ def check_station(app, station_info):
         how_long = station_info['last_seen'] - last_post
         if how_long < current_app.config.get("WEEREG_MIN_DELAY", 23 * 3600):
             app.logger.info(f"Station {station_info['station_url']} is "
-                            f"registering too frequently ({how_long}s).")
+                            f"registering too frequently ({how_long}s)")
             raise RejectStation("FAIL. Registering too frequently", 429)
 
     return last_post
