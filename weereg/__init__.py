@@ -90,10 +90,10 @@ def create_app(test_config=None):
         except RejectStation as eject:
             return eject.reason, eject.code
 
+        db.insert_into_stations(station_info)
+
         app.logger.info(f"Received registration from station {station_info['station_url']} "
                         f"({station_info['last_addr']})")
-
-        db.insert_into_stations(station_info)
 
         # If the staton has never been seen before, do a screen capture.
         if not last_seen:
@@ -113,7 +113,7 @@ def create_app(test_config=None):
             # the process times out.
             try:
                 # Run the capture shell command. If it times out, a TimeoutError will be raised.
-                subprocess.run("/var/www/html/register/capture-one.sh", station_url,
+                subprocess.run(["/var/www/html/register/capture-one.sh", station_url],
                                timeout=timeout)
                 # We're inside a thread, so we cannot use the Flask app logger.
                 # Use the standard logging module.
