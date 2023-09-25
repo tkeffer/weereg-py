@@ -107,18 +107,22 @@ def create_app(test_config=None):
         timeout = timeout or 180
 
         def _do_capture():
+            # Get a logger that we can use in this thread:
+            log = logging.getLogger(__name__)
             # Be prepared to catch an exception in case the capture-one shell doesn't exist, or
             # the process times out.
             try:
                 # Run the capture shell command. If it times out, a TimeoutError will be raised.
                 subprocess.run("/var/www/html/register/capture-one.sh", station_url,
                                timeout=timeout)
-                app.logger.info(f"Kicked off screen capture for station {station_url}")
+                # We're inside a thread, so we cannot use the Flask app logger.
+                # Use the standard logging module.
+                log.info(f"Kicked off screen capture for station {station_url}")
             except FileNotFoundError:
-                app.logger.error("Could not find screen capture app")
+                log.error("Could not find screen capture app")
             except TimeoutError:
-                app.logger.error(f"Screen capture for station {station_url} timed "
-                                 f"out after {timeout} seconds")
+                log.error(f"Screen capture for station {station_url} "
+                          f"timed out after {timeout} seconds")
 
         thread = threading.Thread(target=_do_capture)
         # Start the thread, but don't wait around to 'join' it. We don't care if it succeeds
