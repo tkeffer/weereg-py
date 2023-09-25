@@ -103,10 +103,20 @@ def create_app(test_config=None):
         return "OK"
 
     def _capture_station(station_url, timeout=None):
+        """Kick off the screenshot capture process in a separate thread.
+
+        Args:
+            station_url (str): The unique identifier to be used by a station.
+            timeout (float|None): The number of seconds to wait for the capture subprocess before
+                killing it. Default is 180 seconds
+        """
+
         # Timeout defaults to 180 seconds
         timeout = timeout or 180
 
         def _do_capture():
+            """Do the actual capture. Intended to be run in a thread."""
+
             # Get a logger that we can use in this thread:
             log = logging.getLogger(__name__)
             # Be prepared to catch an exception in case the capture-one shell doesn't exist, or
