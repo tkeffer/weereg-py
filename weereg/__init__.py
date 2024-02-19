@@ -214,8 +214,8 @@ def check_station(app, station_info):
     for reject in ('weewx.com', 'example.com', 'register.cgi'):
         if reject in station_info['station_url']:
             app.logger.info(f"Silly station_url {station_info['station_url']}")
-            raise RejectStation(f"FAIL. {station_info['station_url']} is not a valid station_url",
-                                200)
+            raise RejectStation(f"FAIL. {station_info['station_url']} is not a "
+                                f"serious station_url", 200)
 
     # latitude and longitude have to exist, be convertible to floats, and be in a valid range
     try:
