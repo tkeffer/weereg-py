@@ -1,5 +1,10 @@
 weereg change history
 --------------------
+### 1.6.0 18-Feb-2024
+
+Change errors code for bad station data from `400` to `200`. This allows the
+client to read the response body for clues as to why the post was rejected.
+
 
 ### 1.5.0 23-sep-2023
 

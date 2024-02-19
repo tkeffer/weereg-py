@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2023 Tom Keffer <tkeffer@gmail.com>
+#    Copyright (c) 2023-2024 Tom Keffer <tkeffer@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.5.0"
+__version__ = "1.6.0"
 
 import logging.config
 import os.path
@@ -205,26 +205,26 @@ def check_station(app, station_info):
     # Check station_url. First, we must have one...
     if 'station_url' not in station_info:
         app.logger.info("Missing parameter station_url")
-        raise RejectStation("FAIL. Missing parameter station_url", 400)
+        raise RejectStation("FAIL. Missing parameter station_url", 200)
     # ... it must be valid ...
     if not validators.url(station_info['station_url']):
         app.logger.info(f"Invalid station_url {station_info['station_url']}")
-        raise RejectStation("FAIL. Invalid station_url", 400)
+        raise RejectStation("FAIL. Invalid station_url", 200)
     # ... and not use a silly name.
     for reject in ('weewx.com', 'example.com', 'register.cgi'):
         if reject in station_info['station_url']:
             app.logger.info(f"Silly station_url {station_info['station_url']}")
             raise RejectStation(f"FAIL. {station_info['station_url']} is not a valid station_url",
-                                400)
+                                200)
 
     # latitude and longitude have to exist, be convertible to floats, and be in a valid range
     try:
         lat = float(station_info['latitude'])
         lon = float(station_info['longitude'])
     except (ValueError, KeyError):
-        raise RejectStation("FAIL. Missing or badly formed latitude or longitude", 400)
+        raise RejectStation("FAIL. Missing or badly formed latitude or longitude", 200)
     if not -90 <= lat <= 90 or not -180 <= lon <= 180:
-        raise RejectStation("FAIL. Latitude or longitude out of range", 400)
+        raise RejectStation("FAIL. Latitude or longitude out of range", 200)
 
     # Cannot post too frequently
     last_post = db.get_last_seen(station_info['station_url'])
