@@ -92,7 +92,8 @@ def create_app(test_config=None):
 
         db.insert_into_stations(station_info)
 
-        app.logger.info(f"Received registration from station {station_info['station_url']} "
+        app.logger.info(f"Received registration from station {station_info['station_url']}; "
+                        f"version {station_info.get('weewx_info', 'N/A')}; "
                         f"({station_info['last_addr']})")
 
         # If the staton has never been seen before, do a screen capture.
@@ -231,7 +232,11 @@ def check_station(app, station_info):
     if last_post:
         how_long = station_info['last_seen'] - last_post
         if how_long < current_app.config.get("WEEREG_MIN_DELAY", 23 * 3600):
-            app.logger.info(f"Station {station_info['station_url']} is "
+            if 'weewx_info' in station_info:
+                version = f"v{station_info['weewx_info']}"
+            else:
+                version = "N/A"
+            app.logger.info(f"Station {station_info['station_url']} ({version}) is "
                             f"registering too frequently ({how_long}s)")
             raise RejectStation("FAIL. Registering too frequently", 429)
 
