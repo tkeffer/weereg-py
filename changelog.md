@@ -1,5 +1,13 @@
 weereg change history
 --------------------
+### 1.6.1 08-Apr-2024
+
+Port to Flask V3.0.
+
+Use parameter `strict_slashes`, which allows paths with or without trailing
+slashes to work.
+
+
 ### 1.6.0 18-Feb-2024
 
 Change errors code for bad station data from `400` to `200`. This allows the

@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.6.0"
+__version__ = "1.6.1"
 
 import logging.config
 import os.path
@@ -58,14 +58,14 @@ def create_app(test_config=None):
     logging.config.dictConfig(app.config.get('WEEREG_LOGGING'))
 
     # Legacy "v1", using GET method:
-    @app.get('/api/v1/stations/')
+    @app.get('/api/v1/stations', strict_slashes=False)
     def add_v1_station():
         """Add a station registration to the database."""
         station_info = request.args.to_dict()
         return _register_station(station_info)
 
     # V2 version, using POST method
-    @app.post('/api/v2/stations/')
+    @app.post('/api/v2/stations', strict_slashes=False)
     def add_v2_station():
         station_info = request.get_json()
         return _register_station(station_info)
@@ -139,7 +139,7 @@ def create_app(test_config=None):
         # or fails.
         thread.start()
 
-    @app.get('/api/v2/stations/')
+    @app.get('/api/v2/stations', strict_slashes=False)
     def get_stations():
         """Get all recent stations. """
 

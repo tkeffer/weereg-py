@@ -5,7 +5,7 @@ A Flask-based station registry for WeeWX.
 # Install
 
 ## Prerequisites
-- Python 3.6 or greater
+- Python 3.8 or greater
 
 ## Setting up weereg
 
@@ -225,54 +225,59 @@ GET /api/v1/stations
 
 **Response codes**
 
-| *Status* | *Meaning*                                           |
-|:---------|:----------------------------------------------------|
-| `200`    | Success                                             |
-| `400`    | Malformed post (usually from missing `station_url`) |
-| `429`    | Posting too frequently                              |
+| *Status* | *Meaning*                                              |
+|:---------|:-------------------------------------------------------|
+| `200`    | Message bodies with errors start with the word `FAIL`. |
+| `429`    | Posting too frequently                                 |
+
+**Errors**
+
+If the post is not successful, the message body will start with the word `FAIL`.
+The rest of the body will say why.
 
 **Examples**
 
 Post information about a station. Note the response code of `200`.
 
 ```shell
-$ curl -i --silent -X GET 'http://localhost:5000/api/v1/stations?station_url=https%3A%2F%2Fthreefools.org%2Fweather&description=Test+of+4.10.2&latitude=45.0000&longitude=-122.0000&station_type=Vantage&station_model=Vantage+Pro2&python_info=3.10.5&platform_info=Linux-5.15.0-60-generic-x86_64-with-glibc2.35&config_path=%2Fhome%2Fweewx%2Fweewx.conf&entry_path=%2Fhome%2Fweewx%2Fbin%2Fweewxd&weewx_info=4.10.2'
+$ curl -i --silent -X GET 'http://localhost:5000/api/v1/stations?station_url=https%3A%2F%2Facme.com%2Fweather&description=Test+of+4.10.2&latitude=45.0000&longitude=-122.0000&station_type=Vantage&station_model=Vantage+Pro2&python_info=3.10.5&platform_info=Linux-5.15.0-60-generic-x86_64-with-glibc2.35&config_path=%2Fhome%2Fweewx%2Fweewx.conf&entry_path=%2Fhome%2Fweewx%2Fbin%2Fweewxd&weewx_info=4.10.2'
 HTTP/1.1 200 OK
-Server: Werkzeug/2.2.3 Python/3.8.10
-Date: Mon, 27 Feb 2023 15:53:22 GMT
+Server: Werkzeug/3.0.2 Python/3.8.10
+Date: Tue, 09 Apr 2024 00:33:34 GMT
 Content-Type: text/html; charset=utf-8
 Content-Length: 2
 Connection: close
 ```
 
-Do it again immediately. By default, the app limits posts to once an hour. 
-If you exceed this, it returns an error code of `429`.
+Do it again immediately. By default, the app limits posts to once every 23
+hours. If you exceed this, it returns an error code of `429`.
 
 ```shell
-$ curl -i --silent -X GET 'http://localhost:5000/api/v1/stations?station_url=https%3A%2F%2Fthreefools.org%2Fweather&description=Test+of+4.10.2&latitude=45.0000&longitude=-122.0000&station_type=Vantage&station_model=Vantage+Pro2&python_info=3.10.5&platform_info=Linux-5.15.0-60-generic-x86_64-with-glibc2.35&config_path=%2Fhome%2Fweewx%2Fweewx.conf&entry_path=%2Fhome%2Fweewx%2Fbin%2Fweewxd&weewx_info=4.10.2'
+$ curl -i --silent -X GET 'http://localhost:5000/api/v1/stations?station_url=https%3A%2F%2Facme.com%2Fweather&description=Test+of+4.10.2&latitude=45.0000&longitude=-122.0000&station_type=Vantage&station_model=Vantage+Pro2&python_info=3.10.5&platform_info=Linux-5.15.0-60-generic-x86_64-with-glibc2.35&config_path=%2Fhome%2Fweewx%2Fweewx.conf&entry_path=%2Fhome%2Fweewx%2Fbin%2Fweewxd&weewx_info=4.10.2'
 HTTP/1.1 429 TOO MANY REQUESTS
-Server: Werkzeug/2.2.3 Python/3.8.10
-Date: Mon, 27 Feb 2023 15:55:14 GMT
+Server: Werkzeug/3.0.2 Python/3.8.10
+Date: Tue, 09 Apr 2024 00:34:11 GMT
 Content-Type: text/html; charset=utf-8
-Content-Length: 26
+Content-Length: 32
 Connection: close
 
-Registering too frequently
+FAIL. Registering too frequently
 ```
 
-This time leave out the required parameter `station_url`. An error code of `400`
-(`BAD REQUEST`) is returned.
+This time leave out the required parameter `station_url`. Note that an HTTP code
+of `200` is still returned, but the first word in the message body is `FAIL`.
+The rest of the body will tell why.
 
 ``` shell
 $ curl -i --silent -X GET 'http://localhost:5000/api/v1/stations?latitude=45.0000&longitude=-122.0000&station_type=Vantage&station_model=Vantage+Pro'
-HTTP/1.1 400 BAD REQUEST
-Server: Werkzeug/2.2.3 Python/3.8.10
-Date: Mon, 27 Feb 2023 16:03:57 GMT
+HTTP/1.1 200 OK
+Server: Werkzeug/3.0.2 Python/3.8.10
+Date: Tue, 09 Apr 2024 00:36:03 GMT
 Content-Type: text/html; charset=utf-8
-Content-Length: 29
+Content-Length: 35
 Connection: close
 
-Missing parameter station_url
+FAIL. Missing parameter station_url
 ```
 
 
@@ -301,9 +306,13 @@ registry information as a dictionary. It must include a key `station_url`.
 | *Status* | *Meaning*                                           |
 |:---------|:----------------------------------------------------|
 | `200`    | Success                                             |
-| `400`    | Malformed post (usually from missing `station_url`) |
 | `429`    | Posting too frequently                              |
 
+
+**Errors**
+
+If the post is not successful, the message body will start with the word `FAIL`.
+The rest of the body will say why.
 
 
 ## Get active stations 
@@ -341,8 +350,8 @@ Request stations since 90 days ago, returning only the first 4.
 ```shell
 $ curl -i --silent -X GET 'http://127.0.0.1:5000/api/v2/stations?max_age=90d&limit=4'
 HTTP/1.1 200 OK
-Server: Werkzeug/2.2.3 Python/3.8.10
-Date: Mon, 27 Feb 2023 22:17:23 GMT
+Server: Werkzeug/3.0.2 Python/3.8.10
+Date: Tue, 09 Apr 2024 00:41:33 GMT
 Content-Type: application/json
 Content-Length: 2486
 Connection: close
@@ -428,6 +437,6 @@ Badly formed request
 
 # License & Copyright
 
-Copyright (c) 2023 Tom Keffer <tkeffer@gmail.com>
+Copyright (c) 2024 Tom Keffer <tkeffer@gmail.com>
 
   See the file LICENSE.txt for your full rights.
