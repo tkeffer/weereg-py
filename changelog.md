@@ -1,5 +1,10 @@
 weereg change history
 --------------------
+### 1.7.0 15-Apr-2024
+
+Added the endpoint `/api/v2/stats/<info_type>`.
+
+
 ### 1.6.1 08-Apr-2024
 
 Port to Flask V3.0.

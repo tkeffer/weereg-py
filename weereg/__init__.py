@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.6.1"
+__version__ = "1.7.0"
 
 import logging.config
 import os.path
@@ -150,16 +150,36 @@ def create_app(test_config=None):
                     return "Specify 'max_age' or 'since', but not both", 400
                 since = int(request.args['since'])
             else:
-                max_age = duration(request.args.get('max_age',
-                                                    current_app.config.get(
-                                                        "WEEREG_STATIONS_MAX_AGE", "30d")))
-                since = time.time() - max_age
+                since = duration(request.args.get('max_age',
+                                                  current_app.config.get(
+                                                      "WEEREG_STATIONS_MAX_AGE", "30d")))
             limit = int(request.args.get('limit',
                                          current_app.config.get("WEEREG_STATIONS_LIMIT", 2000)))
         except ValueError:
             return "Badly formed request", 400
 
         results = [stn for stn in db.gen_stations_since(since, limit)]
+        return results
+
+    @app.get('/api/v2/stats/<info_type>')
+    def get_stats(info_type: str):
+        """Get usage statistics"""
+        if info_type not in {"station_type", "station_model", "weewx_info", "python_info",
+                             "platform_info", "config_path", "entry_path"}:
+            return "Invalid info type", 400
+        try:
+            if 'since' in request.args and 'max_age' in request.args:
+                return "Specify 'max_age' or 'since', but not both", 400
+            elif 'since' in request.args:
+                since = int(request.args['since'])
+            elif 'max_age' in request.args:
+                since = duration(request.args.get('max_age'))
+            else:
+                since = None
+        except ValueError:
+            return "Badly formed request", 400
+
+        results = db.get_stats(info_type, start_time=since)
         return results
 
     db.init_app(app)
@@ -243,13 +263,19 @@ def check_station(app, station_info):
     return last_post
 
 
-def duration(val):
+def duration(val, ref_time=None):
+    ref_time = int(ref_time or time.time() + 0.5)
     if isinstance(val, str):
-        if val.endswith('d'):
-            return int(val[:-1]) * 3600 * 24
+        if val.endswith('y'):
+            delta = int(val[:-1]) * 3600 * 24 * 365
+        elif val.endswith('d'):
+            delta = int(val[:-1]) * 3600 * 24
         elif val.endswith('h'):
-            return int(val[:-1]) * 3600
+            delta = int(val[:-1]) * 3600
         elif val.endswith('M'):
-            return int(val[:-1]) * 60
-        return int(val)
-    return val
+            delta = int(val[:-1]) * 60
+        else:
+            delta = int(val)
+    else:
+        delta = val
+    return ref_time - delta

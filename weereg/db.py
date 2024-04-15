@@ -1,3 +1,4 @@
+import datetime
 import sys
 
 import click
@@ -142,7 +143,7 @@ ORDER BY last_seen ASC
 
 def gen_stations_since(since=0, limit=None):
     """Generate a sequence of dictionaries.
-    Each dictionary is the data from when a station was last seen.
+    Each dictionary is the station information as of when a station was last seen.
     Args:
         since (float|int): Generate station information since this time.
         limit (int|None): Max number of stations to return. Default is 2000
@@ -158,3 +159,54 @@ def gen_stations_since(since=0, limit=None):
         for result in cursor.fetchall():
             d = dict(zip(STATION_COLUMNS, result))
             yield d
+
+
+def get_stats(info_type, start_time=None, batch_size=7):
+    db_conn = db.get_db()
+    with db_conn.cursor() as cursor:
+        # Get the last date in the dataset
+        cursor.execute("SELECT MAX(last_seen) FROM weereg.stations")
+        max_timestamp = cursor.fetchone()[0]
+        last_date = datetime.date.fromtimestamp(max_timestamp)
+        interp_dict = {
+            'info_type': info_type,
+            'stop_date': last_date,
+            'batch_size': batch_size,
+            'start_clause': f"WHERE last_seen >= {start_time}" if start_time else "",
+        }
+
+        sql = """
+        SELECT batch,
+               TRUNCATE(UNIX_TIMESTAMP(DATE_ADD('%(stop_date)s', INTERVAL - %(batch_size)s * batch + 1 DAY)), 0),
+               %(info_type)s,
+               COUNT(*)
+        FROM weereg.stations t
+        INNER JOIN (
+            SELECT station_url,
+                   TRUNCATE((DATEDIFF('%(stop_date)s',
+                                      FROM_UNIXTIME(last_seen)))/ %(batch_size)s, 0) as batch,
+                   MAX(last_seen) as MaxSeen
+            FROM weereg.stations
+            %(start_clause)s
+            GROUP BY batch, station_url
+        ) last_stns
+        ON t.station_url = last_stns.station_url
+        AND t.last_seen = last_stns.MaxSeen
+        GROUP BY last_stns.batch, %(info_type)s
+        ORDER BY %(info_type)s, last_stns.batch DESC;
+        """ % interp_dict
+
+        cursor.execute(sql)
+        results = dict()
+        for row in cursor.fetchall():
+            # Deconstruct the row
+            batch, stop, value, count = row
+            # Some info_types can be None, which the JSON sorting algorithm doesn't like.
+            # Replace with a N/A string
+            if value is None:
+                value = 'N/A'
+            if value not in results:
+                results[value] = [[], []]
+            results[value][0].append(stop)
+            results[value][1].append(count)
+        return results

@@ -81,7 +81,7 @@ proxied by an nginx server.
    ```
 
 2. Edit the configuration file `config.py` to reflect the new location of the 
-   log. Change
+   log. For example, change
  
        'filename': '/var/tmp/weereg.log',
 
@@ -165,8 +165,8 @@ server {
          proxy_pass http://unix:/run/weereg/weereg.sock;
      }
 
-     # 3. Forward all V2 API requests to the app server.
-     location /api/v2/stations {
+     # 3. Forward all V2 API requests on to the app server.
+     location /api/v2 {
          include proxy_params;
          proxy_pass http://unix:/run/weereg/weereg.sock;
      }
@@ -186,8 +186,8 @@ Here's what the three new sections mean:
    application server. Deny all other HTTP methods (such as `POST`).
 
 3. If a request comes in to the v2 API, forward it on to the application server.
-   The lack of a trailing slash on `/api/v2/stations` is important. It allows
-   matches to both `/api/v2/stations` and `/api/v2/stations/`.
+   For example, if a request comes in to `/api/v2/stations`, it will be 
+   forwarded.
 
 When you're done, restart the nginx server.
 
@@ -315,7 +315,7 @@ If the post is not successful, the message body will start with the word `FAIL`.
 The rest of the body will say why.
 
 
-## Get active stations 
+## Get active stations
 
 Return the latest information about stations since some time ago.
 
@@ -327,9 +327,9 @@ GET /api/v2/stations
 
 | *Name*    | *Type* | *Description*                                                                                                           |
 |:----------|:-------|:------------------------------------------------------------------------------------------------------------------------|
-| `since`   | int    | Include results since this time. Optional.                                                                              |
+| `since`   | int    | Include results since this time in unix epoch time. Optional.                                                           |
 | `max_age` | int    | How old a station can be to be included. Can use [*duration notation*](#duration-notation). Default is `30d`. Optional. |
-| `limit`   | int    | Maximum number of stations to return. Default is 2000. Optional.                                                        |
+| `limit`   | int    | Maximum number of stations to return. Default is `2000`. Optional.                                                      |
 
 NB: You can specify `since` or `max_age`, but not both.
 
@@ -426,14 +426,103 @@ Connection: close
 Badly formed request
 ```
 
+## Get statistics
+
+Returns information on how many stations had a certain property as a function of
+time. For example, how Python usage varied over time.
+
+```
+GET /api/v2/stats/<info_type>
+```
+
+**Path parameters**
+
+| *Name*      | *Type* | *Description*                                                                                                                                                      |
+|:------------|:-------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `info_type` | str    | The type of information desired. Must be one of `station_type`, `station_model`, `weewx_info`, `python_info`,<br/>`platform_info`, `config_path`, or `entry_path`. |
+
+
+**Parameters**
+
+| *Name*    | *Type* | *Description*                                                                                                              |
+|:----------|:-------|:---------------------------------------------------------------------------------------------------------------------------|
+| `since`   | int    | Include results since this time in unix epoch time. Optional. Default is to include all time.                              |
+| `max_age` | int    | How old a station can be to be included. Can use [*duration notation*](#duration-notation). Optional. Default is all time. |
+
+NB: You can specify `since` or `max_age`, but not both.
+
+
+**Response codes**
+
+| *Status* | *Meaning*                                                              |
+|:---------|:-----------------------------------------------------------------------|
+| `200`    | Success                                                                |
+| `400`    | Badly formed request. Perhaps a character where a number was expected? |      
+
+If successful (`200`), the server will return the results as a JSON dictionary,
+where the key is a value for the information type, and the value is two lists.
+The first list is a timeseries, the second the number of stations with that
+information type.
+
+**Examples**
+
+Request time elevation of WeeWX versions:
+
+```shell
+curl -i --silent -X GET 'http://127.0.0.1:5000/api/v2/stats/weewx_info'
+HTTP/1.1 200 OK
+Server: Werkzeug/3.0.2 Python/3.8.10
+Date: Mon, 15 Apr 2024 19:42:39 GMT
+Content-Type: application/json
+Content-Length: 170853
+Connection: close
+
+{
+  "2.5.0": [
+    [
+      "1509174000",
+      "1510387200",
+      "1510992000",
+      "1513411200",
+      ...
+    ],
+    [
+      1,
+      1,
+      1,
+      5,
+      ...
+    ]
+  ],
+  [
+  "2.5.1": [
+    [
+      "1510387200",
+      "1513411200",
+      "1514016000",
+      "1514620800",
+      ...
+    ],
+    [
+      1,
+      2,
+      3,
+      3,
+      ...
+    ]
+  ],
+  ...
+```
+
 ## Duration notation
 
-| *Example* | *Meaning*                   |
-|:----------|:----------------------------|
-| `7200`    | 7,200 seconds               |
-| `2h`      | 2 hours (7,200 seconds)     |
-| `120M`    | 120 minutes (7,200 seconds) |
-| `7d`      | 7 days (604,800 seconds)    |
+| *Example* | *Meaning*                     |
+|:----------|:------------------------------|
+| `7200`    | 7,200 seconds                 |
+| `2h`      | 2 hours (7,200 seconds)       |
+| `120M`    | 120 minutes (7,200 seconds)   |
+| `7d`      | 7 days (604,800 seconds)      |
+| `1y`      | 365 days (31,536,000 seconds) |
 
 # License & Copyright
 
