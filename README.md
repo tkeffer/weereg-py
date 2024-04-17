@@ -444,12 +444,20 @@ GET /api/v2/stats/<info_type>
 
 **Parameters**
 
-| *Name*    | *Type* | *Description*                                                                                                              |
-|:----------|:-------|:---------------------------------------------------------------------------------------------------------------------------|
-| `since`   | int    | Include results since this time in unix epoch time. Optional. Default is to include all time.                              |
-| `max_age` | int    | How old a station can be to be included. Can use [*duration notation*](#duration-notation). Optional. Default is all time. |
+| *Name*        | *Type* | *Description*                                                                                                              |
+|:--------------|:-------|:---------------------------------------------------------------------------------------------------------------------------|
+| `since`       | int    | Include results since this time in unix epoch time. Optional. Default is to include all time.                              |
+| `max_age`     | int    | How old a station can be to be included. Can use [*duration notation*](#duration-notation). Optional. Default is all time. |
+| `consolidate` | bool   | If present, consolidate `entry_path` and `config_path` entries. Default is to not consolidate.                             |
 
 NB: You can specify `since` or `max_age`, but not both.
+
+The `consolidate` parameter groups similar path entries together. For example,
+`/home/dennis/weewx-data/weewx.conf` and `/home/joe/weewx-data/weewx.conf`
+would be grouped under a wildcard: `/home/*/weewx-data/weewx.conf`.
+Similarly, `/home/dennis/weewx-venv/bin/weewxd` and
+`/home/joe/venv/lib/python3.7/site-packages/weewxd.py` would get grouped
+together under `/home/*/weewx-venv/bin/weewxd`.
 
 
 **Response codes**

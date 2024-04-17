@@ -180,6 +180,11 @@ def create_app(test_config=None):
             return "Badly formed request", 400
 
         results = db.get_stats(info_type, start_time=since)
+
+        # If requested, consolidate the results.
+        if 'consolidate' in request.args:
+            results = consolidate(info_type, results)
+
         return results
 
     db.init_app(app)
@@ -266,6 +271,48 @@ def check_station(app, station_info):
             raise RejectStation("FAIL. Registering too frequently", 429)
 
     return last_post
+
+
+config_path_re = re.compile(r"""
+                    /(home|Users)/  # Accept either /home or /Users
+                    [-\w]+?/        # Match a user directory name. May contain a dash
+                    weewx-data/.*   # Match anything following "weewx-data"
+                    """, re.X)
+entry_path_re = re.compile(r"""
+                   /(home|Users)/       # Accept either /home or /Users
+                   [-\w]+?/             # Match a user directory name. May contain a dash
+                   [-\w]*?venv[-\w]*/   # Match anything containing "venv"
+                   """, re.X, )
+
+
+def consolidate(info_type, result_set):
+    if info_type == 'config_path':
+        return consolidate_info(config_path_re, result_set, '/home/*/weewx-data/weewx.conf')
+    elif info_type == 'entry_path':
+        return consolidate_info(entry_path_re, result_set, '/home/*/weewx-venv/bin/weewxd')
+    return result_set
+
+
+def consolidate_info(matcher, result_set, new_key):
+    """Merge the count of all the keys that match 'matcher' under one key in the result set."""
+    to_be_merged_dict = dict()
+    count_dict = dict()
+    for key in list(result_set.keys()):
+        if matcher.match(key):
+            # Initalize the count for all timestamps in this key
+            for timestamp in result_set[key][0]:
+                count_dict[timestamp] = 0
+            # Save the matching keys. They will be merged together in the next step
+            to_be_merged_dict[key] = result_set.pop(key)
+    # If any matches were found...
+    if to_be_merged_dict:
+        # To through the matched keys, adding their count to the new count.
+        for key in to_be_merged_dict:
+            for timestamp, count in zip(to_be_merged_dict[key][0], to_be_merged_dict[key][1]):
+                count_dict[timestamp] += count
+        # Consolidate the results under the new key
+        result_set[new_key] = [[t for t in count_dict], [count_dict[t] for t in count_dict]]
+    return result_set
 
 
 def duration(val, ref_time=None):
