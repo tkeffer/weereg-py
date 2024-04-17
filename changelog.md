@@ -1,6 +1,11 @@
 weereg change history
 --------------------
-### 1,7.2 17-Apr-2024
+### 1.8.0 17-Apr-2024
+
+Offer `consolidate` as a parameter.
+
+
+### 1.7.2 17-Apr-2024
 
 Set `autocommit=True` when establishing connection, instead of in the cursor.
 
