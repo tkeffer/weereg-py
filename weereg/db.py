@@ -101,6 +101,7 @@ def insert_into_stations(station_info):
 
     db_conn = db.get_db()
     with db_conn.cursor() as cursor:
+        cursor.execute("SET AUTOCOMMIT=1;")
         cursor.execute(sql_stmt)
 
     return True
