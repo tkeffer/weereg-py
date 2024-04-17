@@ -34,7 +34,8 @@ def get_db():
                                port=current_app.config['WEEREG_MYSQL_PORT'],
                                user=current_app.config['WEEREG_MYSQL_USER'],
                                passwd=current_app.config['WEEREG_MYSQL_PASSWORD'],
-                               db=current_app.config['WEEREG_MYSQL_DATABASE'])
+                               db=current_app.config['WEEREG_MYSQL_DATABASE'],
+                               autocommit=True)
     return g.db
 
 
@@ -101,7 +102,6 @@ def insert_into_stations(station_info):
 
     db_conn = db.get_db()
     with db_conn.cursor() as cursor:
-        cursor.execute("SET AUTOCOMMIT=1;")
         cursor.execute(sql_stmt)
 
     return True
