@@ -162,6 +162,19 @@ def gen_stations_since(since=0, limit=None):
 
 
 def get_stats(info_type, start_time=None, batch_size=7):
+    """Get statistics for a particular type of information
+    Args:
+        info_type (str): Generall, something like 'python_info', or 'weewx_info'
+        start_time (float|None): Earliest time to use. Default is use all time.
+        batch_size (int): Chunk size to search for stations. Default is 7.
+
+    Returns:
+        dict: Key is the information value (e.g., "3.8.1"). Value is a list
+            of two lists. The first list is the timestamps, the second the count of the number
+            of stations with the information value at that
+            time [ [time1, time2, ...], [count1, count2, ...] ]
+
+    """
     db_conn = db.get_db()
     with db_conn.cursor() as cursor:
         # Get the last date in the dataset
