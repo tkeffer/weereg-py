@@ -34,7 +34,8 @@ def get_db():
                                port=current_app.config['WEEREG_MYSQL_PORT'],
                                user=current_app.config['WEEREG_MYSQL_USER'],
                                passwd=current_app.config['WEEREG_MYSQL_PASSWORD'],
-                               db=current_app.config['WEEREG_MYSQL_DATABASE'])
+                               db=current_app.config['WEEREG_MYSQL_DATABASE'],
+                               autocommit=True)
     return g.db
 
 
