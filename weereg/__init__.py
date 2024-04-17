@@ -206,6 +206,11 @@ def sanitize_station(station_info):
         if match:
             station_info['station_model'] = match.group(1)
 
+    if 'config_path' in station_info:
+        station_info['config_path'] = os.path.normpath(station_info['config_path'])
+    if 'entry_path' in station_info:
+        station_info['entry_path'] = os.path.normpath(station_info['entry_path'])
+
     return station_info
 
 
