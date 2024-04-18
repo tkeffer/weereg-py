@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.8.0"
+__version__ = "1.8.1"
 
 import logging.config
 import os.path
