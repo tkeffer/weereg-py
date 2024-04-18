@@ -1,5 +1,11 @@
 weereg change history
 --------------------
+### 1.8.1 17-Apr-2024
+
+Trim `entry_path` and `config_path` to 64 characters.
+Catch and log any database exceptions.
+
+
 ### 1.8.0 17-Apr-2024
 
 Offer `consolidate` as a parameter.

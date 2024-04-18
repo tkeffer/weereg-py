@@ -17,6 +17,7 @@ import threading
 import time
 from dataclasses import dataclass
 
+import pymysql.err
 import validators.url
 from flask import Flask, request, current_app
 
@@ -84,13 +85,17 @@ def create_app(test_config=None):
         station_info['last_seen'] = int(time.time() + 0.5)
         station_info['last_addr'] = request.remote_addr
 
-        station_info = sanitize_station(station_info)
+        station_info = sanitize_station(station_info, app.logger)
         try:
             last_seen = check_station(app, station_info)
         except RejectStation as eject:
             return eject.reason, eject.code
 
-        db.insert_into_stations(station_info)
+        try:
+            db.insert_into_stations(station_info)
+        except pymysql.err.DatabaseError as e:
+            app.logger.error(e)
+            return "Internal error", 500
 
         app.logger.info(f"Received registration from station {station_info['station_url']}; "
                         f"version {station_info.get('weewx_info', 'N/A')}; "
@@ -192,7 +197,7 @@ def create_app(test_config=None):
     return app
 
 
-def sanitize_station(station_info):
+def sanitize_station(station_info, logger):
     """Correct any obvious errors in the station information"""
 
     # Get rid of carriage returns, newlines, and double-quotes. Single quotes are OK,
@@ -211,10 +216,18 @@ def sanitize_station(station_info):
         if match:
             station_info['station_model'] = match.group(1)
 
+    # For config_path and entry_path, normalize them, then make sure they are not longer than
+    # the space allocated for them in the database.
     if 'config_path' in station_info:
         station_info['config_path'] = os.path.normpath(station_info['config_path'])
+        if len(station_info['config_path']) > 64:
+            station_info['config_path'] = station_info['config_path'][:64]
+            logger.debug(f"Station {station_info['station_url']}: trimmed 'config_path'.")
     if 'entry_path' in station_info:
         station_info['entry_path'] = os.path.normpath(station_info['entry_path'])
+        if len(station_info['entry_path']) > 64:
+            station_info['entry_path'] = station_info['entry_path'][:64]
+            logger.debug(f"Station {station_info['station_url']}: trimmed 'entry_path'.")
 
     return station_info
 
