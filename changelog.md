@@ -1,5 +1,10 @@
 weereg change history
 --------------------
+### 1.9.0 19-Apr-2024
+
+The parameter `consolidate` now works for `weewx_info` and `python_info`.
+
+
 ### 1.8.1 17-Apr-2024
 
 Trim `entry_path` and `config_path` to 64 characters.

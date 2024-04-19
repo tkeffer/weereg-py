@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.8.1"
+__version__ = "1.9.0"
 
 import logging.config
 import os.path
@@ -287,44 +287,52 @@ def check_station(app, station_info):
 
 
 config_path_re = re.compile(r"""
-                    /(home|Users)/  # Accept either /home or /Users
-                    [-\w]+?/        # Match a user directory name. May contain a dash
-                    weewx-data/.*   # Match anything following "weewx-data"
+                    /(home|Users)/      # Accept either /home or /Users
+                    [-\w]+?/            # Match a user directory name. May contain a dash
+                    weewx-data/.*       # Match weewx-data, followed by anything
                     """, re.X)
 entry_path_re = re.compile(r"""
                    /(home|Users)/       # Accept either /home or /Users
                    [-\w]+?/             # Match a user directory name. May contain a dash
                    [-\w]*?venv[-\w]*/   # Match anything containing "venv"
-                   """, re.X, )
+                   """, re.X)
+
+major_minor_re = re.compile(r"""
+                    ^(\d+?\.\d+?)\..*   # Match a major.minor version number
+                    """, re.X)
 
 
 def consolidate(info_type, result_set):
     if info_type == 'config_path':
-        return consolidate_info(config_path_re, result_set, '/home/*/weewx-data/weewx.conf')
+        return consolidate_info(config_path_re, result_set,
+                                lambda m: '/home/*/weewx-data/weewx.conf')
     elif info_type == 'entry_path':
-        return consolidate_info(entry_path_re, result_set, '/home/*/weewx-venv/bin/weewxd')
+        return consolidate_info(entry_path_re, result_set,
+                                lambda m: '/home/*/weewx-venv/bin/weewxd')
+    elif info_type == 'python_info' or info_type == 'weewx_info':
+        return consolidate_info(major_minor_re, result_set,
+                                lambda m: m.group(1))
     return result_set
 
 
-def consolidate_info(matcher, result_set, new_key):
-    """Merge the count of all the keys that match 'matcher' under one key in the result set."""
-    to_be_merged_dict = dict()
+def consolidate_info(matcher, result_set, new_key_fun):
+    # count_dict will be a dictionary of dictionaries. The outer dictionary is keyed by the
+    # info_type value (e.g., for a Python consolidation, perhaps "3.5"). The inner dictionary is
+    # keyed by a timestamp, with the count being the value.
     count_dict = dict()
-    for key in list(result_set.keys()):
-        if matcher.match(key):
-            # Initalize the count for all timestamps in this key
-            for timestamp in result_set[key][0]:
-                count_dict[timestamp] = 0
-            # Save the matching keys. They will be merged together in the next step
-            to_be_merged_dict[key] = result_set.pop(key)
-    # If any matches were found...
-    if to_be_merged_dict:
-        # To through the matched keys, adding their count to the new count.
-        for key in to_be_merged_dict:
-            for timestamp, count in zip(to_be_merged_dict[key][0], to_be_merged_dict[key][1]):
-                count_dict[timestamp] += count
-        # Consolidate the results under the new key
-        result_set[new_key] = [[t for t in count_dict], [count_dict[t] for t in count_dict]]
+    for info_value in list(result_set.keys()):
+        if m := matcher.match(info_value):
+            new_info_value = new_key_fun(m)
+            if new_info_value not in count_dict:
+                count_dict[new_info_value] = dict()
+            for timestamp, count in zip(result_set[info_value][0], result_set[info_value][1]):
+                count_dict[new_info_value][timestamp] \
+                    = count_dict[new_info_value].get(timestamp, 0) + count
+            del result_set[info_value]
+    # Add the consolidated keys to the result set:
+    for new_key in count_dict:
+        times, counts = zip(*sorted(count_dict[new_key].items()))
+        result_set[new_key] = [times, counts]
     return result_set
 
 

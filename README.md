@@ -459,6 +459,10 @@ Similarly, `/home/dennis/weewx-venv/bin/weewxd` and
 `/home/joe/venv/lib/python3.7/site-packages/weewxd.py` would get grouped
 together under `/home/*/weewx-venv/bin/weewxd`.
 
+For Python and WeeWX versions, `consolidate` returns only "dot" releases. That
+is, Python 3.6.0, 3.6.1, 3.6.2, etc., would all be lumped together as "3.6".
+Similarly with WeeWX versions.
+
 
 **Response codes**
 
