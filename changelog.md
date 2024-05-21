@@ -1,5 +1,11 @@
 weereg change history
 --------------------
+### 1.9.1 21-May-2024
+
+Bumped PyMySQL dependency from 1.1.0 to 1.1.1, to avoid SQL injection
+vulnerability.
+
+
 ### 1.9.0 19-Apr-2024
 
 The parameter `consolidate` now works for `weewx_info` and `python_info`.
