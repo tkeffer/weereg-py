@@ -1,5 +1,10 @@
 weereg change history
 --------------------
+### 1.9.2 29-May-2024
+
+The parameter `consolidate` now works for `platform_info`.
+
+
 ### 1.9.1 21-May-2024
 
 Bumped PyMySQL dependency from 1.1.0 to 1.1.1, to avoid SQL injection

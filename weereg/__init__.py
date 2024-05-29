@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.9.1"
+__version__ = "1.9.2"
 
 import logging.config
 import os.path
@@ -301,6 +301,10 @@ major_minor_re = re.compile(r"""
                     ^(\d+?\.\d+?)\..*   # Match a major.minor version number
                     """, re.X)
 
+platform_re = re.compile(r"""
+                    ^((\w+-\d+)|(\w+))  # Match a platform name with optional major version number
+                    """, re.X)
+
 
 def consolidate(info_type, result_set):
     if info_type == 'config_path':
@@ -311,6 +315,9 @@ def consolidate(info_type, result_set):
                                 lambda m: '/home/*/weewx-venv/bin/weewxd')
     elif info_type == 'python_info' or info_type == 'weewx_info':
         return consolidate_info(major_minor_re, result_set,
+                                lambda m: m.group(1))
+    elif info_type == 'platform_info':
+        return consolidate_info(platform_re, result_set,
                                 lambda m: m.group(1))
     return result_set
 
