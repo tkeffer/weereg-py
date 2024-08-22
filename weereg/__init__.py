@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.9.2"
+__version__ = "1.9.3"
 
 import logging.config
 import os.path
@@ -128,15 +128,17 @@ def create_app(test_config=None):
             # Be prepared to catch an exception in case the capture-one shell doesn't exist, or
             # the process times out.
             try:
-                # Run the capture shell command. If it times out, a TimeoutError will be raised.
-                subprocess.run(["/var/www/html/register/capture-one.sh", station_url],
-                               timeout=timeout)
+                # Run the capture shell command.
+                p = subprocess.Popen(["/var/www/html/register/capture-one.sh", station_url],
+                                     start_new_session=True)
+                # Wait for the subprocess to terminate. Give up after "timeout" seconds.
+                p.wait(timeout=timeout)
                 # We're inside a thread, so we cannot use the Flask app logger.
                 # Use the standard logging module.
                 log.info(f"Kicked off screen capture for station {station_url}")
             except FileNotFoundError:
                 log.error("Could not find screen capture app")
-            except TimeoutError:
+            except subprocess.TimeoutError:
                 log.error(f"Screen capture for station {station_url} "
                           f"timed out after {timeout} seconds")
 

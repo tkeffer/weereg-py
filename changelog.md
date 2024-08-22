@@ -1,5 +1,10 @@
 weereg change history
 --------------------
+### 1.9.3 DD-Aug-2024
+
+Change how the capture timeout is handled.
+
+
 ### 1.9.2 29-May-2024
 
 The parameter `consolidate` now works for `platform_info`.
