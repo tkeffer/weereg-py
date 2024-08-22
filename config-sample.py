@@ -33,10 +33,10 @@ WEEREG_LOGGING = {
         'rotate': {
             'level': 'DEBUG',
             'formatter': 'default',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/tmp/weereg.log',
-            'maxBytes': 1000000,
-            'backupCount': 4,
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': '/var/log/weereg/weereg.log',
+            'when': 'midnight',
+            'backupCount': 7,
         }
     },
     'root': {
