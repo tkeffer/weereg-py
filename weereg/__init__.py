@@ -12,6 +12,7 @@ __version__ = "1.9.3"
 import logging.config
 import os.path
 import re
+import signal
 import subprocess
 import threading
 import time
@@ -140,7 +141,9 @@ def create_app(test_config=None):
                 log.error("Could not find screen capture app")
             except subprocess.TimeoutError:
                 log.error(f"Screen capture for station {station_url} "
-                          f"timed out after {timeout} seconds")
+                          f"timed out after {timeout} seconds.")
+                log.error(f"Terminating the process group with PID={p.pid}.")
+                os.killpg(os.getpgid(p.pid), signal.SIGTERM)
 
         thread = threading.Thread(target=_do_capture)
         # Start the thread, but don't wait around to 'join' it. We don't care if it succeeds
