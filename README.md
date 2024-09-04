@@ -57,15 +57,43 @@ These steps assume the weereg code will be in your home directory in
 
 ### Setting up a development environment
 
-To set up a development environment, follow the "Common" steps above,
-then simply run the application directly, using debug mode:
+To set up a development environment, follow the "Common" steps above, then...
 
- ```shell
- # Run the application:
- python3 -m flask --app weereg run --debug
- ```
+1. Create a user `weereg` with password `weereg`:
 
-The flask application will now be up and running, and monitoring port 5000.
+   ```
+   mysql -u root -p
+   mysql> create user 'weereg' identified by 'weereg';
+   mysql> grant select,update,create,delete,insert,alter,drop on weereg.* to weereg;
+   ```
+
+2. Run the application directly, using debug mode:
+
+    ```shell
+    # Run the application:
+    python3 -m flask --app weereg run --debug
+    ```
+   
+   The flask application will now be up and running, and monitoring port 5000.
+
+3. Set up a mini reverse proxy on the nginx server. This will only work for V2
+   API requests.
+
+   ````nginx configuration
+   server {
+   
+        ... # Previous content
+        
+        Forward all V2 API requests on to the app server.
+        location /api/v2 {
+            include proxy_params;
+            proxy_pass http://localhost:5000;
+        }
+        
+        ...
+   }
+   ```
+
 
 ### Setting up a production environment
 
@@ -478,7 +506,7 @@ information type.
 
 **Examples**
 
-Request time elevation of WeeWX versions:
+Request time evolution of WeeWX versions:
 
 ```shell
 curl -i --silent -X GET 'http://127.0.0.1:5000/api/v2/stats/weewx_info'
