@@ -26,7 +26,7 @@ from . import db
 
 # The minimum keys needed for the station map:
 STATION_MAP_MINIMUM = {'description', 'last_seen', 'latitude', 'longitude',
-                       'station_model', 'station_type', 'station_url'}
+                       'station_model', 'station_type', 'station_url', 'weewx_info'}
 
 
 @dataclass
