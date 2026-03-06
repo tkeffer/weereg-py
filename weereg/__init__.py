@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2023-2024 Tom Keffer <tkeffer@gmail.com>
+#    Copyright (c) 2023-2026 Tom Keffer <tkeffer@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.9.3"
+__version__ = "1.9.4"
 
 import logging.config
 import os.path
@@ -139,7 +139,7 @@ def create_app(test_config=None):
                 log.info(f"Kicked off screen capture for station {station_url}")
             except FileNotFoundError:
                 log.error("Could not find screen capture app")
-            except subprocess.TimeoutError:
+            except subprocess.TimeoutExpired:
                 log.error(f"Screen capture for station {station_url} "
                           f"timed out after {timeout} seconds.")
                 log.error(f"Terminating the process group with PID={p.pid}.")

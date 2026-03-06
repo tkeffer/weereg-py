@@ -1,6 +1,11 @@
 weereg change history
 --------------------
-### 1.9.3 DD-Aug-2024
+### 1.9.4 06-Mar-2026
+
+Correct the type of the timeout exception.
+
+
+### 1.9.3 08-Aug-2024
 
 Change how the capture timeout is handled.
 
