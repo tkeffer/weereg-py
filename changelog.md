@@ -1,5 +1,11 @@
 weereg change history
 --------------------
+### 1.10.0 06-Mar-2026
+
+Introduce a new URL parameter `slim`. When set to `True`, only the minimum
+information necessary for the station map is returned.
+
+
 ### 1.9.4 06-Mar-2026
 
 Correct the type of the timeout exception.

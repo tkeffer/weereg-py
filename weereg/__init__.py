@@ -7,7 +7,7 @@
 
 See README.md for how to set up and use.
 """
-__version__ = "1.9.4"
+__version__ = "1.10.0"
 
 import logging.config
 import os.path
@@ -23,6 +23,10 @@ import validators.url
 from flask import Flask, request, current_app
 
 from . import db
+
+# The minimum keys needed for the station map:
+STATION_MAP_MINIMUM = {'description', 'last_seen', 'latitude', 'longitude',
+                       'station_model', 'station_type', 'station_url'}
 
 
 @dataclass
@@ -168,7 +172,13 @@ def create_app(test_config=None):
         except ValueError:
             return "Badly formed request", 400
 
-        results = [stn for stn in db.gen_stations_since(since, limit)]
+        if 'slim' in request.args:
+            results = []
+            for stn in db.gen_stations_since(since, limit):
+                stn_dict = {key: stn[key] for key in stn if key in STATION_MAP_MINIMUM}
+                results.append(stn_dict)
+        else:
+            results = [stn for stn in db.gen_stations_since(since, limit)]
         return results
 
     @app.get('/api/v2/stats/<info_type>')

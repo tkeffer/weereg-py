@@ -358,6 +358,7 @@ GET /api/v2/stations
 | `since`   | int    | Include results since this time in unix epoch time. Optional.                                                           |
 | `max_age` | int    | How old a station can be to be included. Can use [*duration notation*](#duration-notation). Default is `30d`. Optional. |
 | `limit`   | int    | Maximum number of stations to return. Default is `2000`. Optional.                                                      |
+| `slim`    | bool   | If true, only return the minimum needed for the station map. Default is `false`. Optional.                              |
 
 NB: You can specify `since` or `max_age`, but not both.
 
