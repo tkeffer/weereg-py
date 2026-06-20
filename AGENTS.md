@@ -32,6 +32,7 @@ The primary table is `stations` in the `weereg` database.
     - `last_seen`: Unix timestamp of the last time a station registered.
     - `last_addr`: IP address of the reporting station (supports IPv6).
     - `weewx_info`, `python_info`, `platform_info`: Version and environment metadata.
+    - `config_path`, `entry_path`: Internal paths (not exposed via public API).
 
 ## API Versions
 ### V1 (Legacy)
@@ -45,7 +46,7 @@ The primary table is `stations` in the `weereg` database.
     - `POST`: Modern registration using JSON body.
     - `GET`: Retrieve active stations (supports filtering via `since`, `max_age`, `limit`, and `slim`).
 - **Endpoint**: `GET /api/v2/stats/<info_type>`
-- **Purpose**: Usage statistics for various properties (e.g., Python versions, hardware types). Supports `consolidate` parameter for grouping similar versions or paths.
+- **Purpose**: Usage statistics for various properties (e.g., Python versions, hardware types, and `installer_info`). Supports `consolidate` parameter for grouping similar versions.
 
 ## Key Workflows
 ### Station Registration

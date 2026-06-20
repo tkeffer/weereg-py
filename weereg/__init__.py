@@ -185,7 +185,7 @@ def create_app(test_config=None):
     def get_stats(info_type: str):
         """Get usage statistics"""
         if info_type not in {"station_type", "station_model", "weewx_info", "python_info",
-                             "platform_info", "config_path", "entry_path"}:
+                             "platform_info", "installer_info"}:
             return "Invalid info type", 400
         try:
             if 'since' in request.args and 'max_age' in request.args:
@@ -301,17 +301,6 @@ def check_station(app, station_info):
     return last_post
 
 
-config_path_re = re.compile(r"""
-                    /(home|Users)/      # Accept either /home or /Users
-                    [-\w]+?/            # Match a user directory name. May contain a dash
-                    weewx-data/.*       # Match weewx-data, followed by anything
-                    """, re.X)
-entry_path_re = re.compile(r"""
-                   /(home|Users)/       # Accept either /home or /Users
-                   [-\w]+?/             # Match a user directory name. May contain a dash
-                   [-\w]*?venv[-\w]*/   # Match anything containing "venv"
-                   """, re.X)
-
 major_minor_re = re.compile(r"""
                     ^(\d+?\.\d+?)\..*   # Match a major.minor version number
                     """, re.X)
@@ -322,13 +311,7 @@ platform_re = re.compile(r"""
 
 
 def consolidate(info_type, result_set):
-    if info_type == 'config_path':
-        return consolidate_info(config_path_re, result_set,
-                                lambda m: '/home/*/weewx-data/weewx.conf')
-    elif info_type == 'entry_path':
-        return consolidate_info(entry_path_re, result_set,
-                                lambda m: '/home/*/weewx-venv/bin/weewxd')
-    elif info_type == 'python_info' or info_type == 'weewx_info':
+    if info_type == 'python_info' or info_type == 'weewx_info':
         return consolidate_info(major_minor_re, result_set,
                                 lambda m: m.group(1))
     elif info_type == 'platform_info':

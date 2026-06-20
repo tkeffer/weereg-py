@@ -63,6 +63,7 @@ To set up a development environment, follow the "Common" steps above, then...
 
    ```
    mysql -u root -p
+   mysql> create database weereg;
    mysql> create user 'weereg' identified by 'weereg';
    mysql> grant select,update,create,delete,insert,alter,drop on weereg.* to weereg;
    ```
@@ -468,7 +469,7 @@ GET /api/v2/stats/<info_type>
 
 | *Name*      | *Type* | *Description*                                                                                                                                                      |
 |:------------|:-------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `info_type` | str    | The type of information desired. Must be one of `station_type`, `station_model`, `weewx_info`, `python_info`,<br/>`platform_info`, `config_path`, or `entry_path`. |
+| `info_type` | str    | The type of information desired. Must be one of `station_type`, `station_model`, `weewx_info`, `python_info`,<br/>`platform_info`, or `installer_info`. |
 
 
 **Parameters**
@@ -477,20 +478,17 @@ GET /api/v2/stats/<info_type>
 |:--------------|:-------|:---------------------------------------------------------------------------------------------------------------------------|
 | `since`       | int    | Include results since this time in unix epoch time. Optional. Default is to include all time.                              |
 | `max_age`     | int    | How old a station can be to be included. Can use [*duration notation*](#duration-notation). Optional. Default is all time. |
-| `consolidate` | bool   | If present, consolidate `entry_path` and `config_path` entries. Default is to not consolidate.                             |
+| `consolidate` | bool   | If present, consolidate WeeWX and Python version entries. Default is to not consolidate.                                   |
 
 NB: You can specify `since` or `max_age`, but not both.
 
-The `consolidate` parameter groups similar path entries together. For example,
-`/home/dennis/weewx-data/weewx.conf` and `/home/joe/weewx-data/weewx.conf`
-would be grouped under a wildcard: `/home/*/weewx-data/weewx.conf`.
-Similarly, `/home/dennis/weewx-venv/bin/weewxd` and
-`/home/joe/venv/lib/python3.7/site-packages/weewxd.py` would get grouped
-together under `/home/*/weewx-venv/bin/weewxd`.
+The `installer_info` property categorizes stations into two bins: those that
+were installed using a package installer (`package`), and those that were
+not (`other`).
 
-For Python and WeeWX versions, `consolidate` returns only "dot" releases. That
-is, Python 3.6.0, 3.6.1, 3.6.2, etc., would all be lumped together as "3.6".
-Similarly with WeeWX versions.
+For Python and WeeWX versions, the `consolidate` parameter returns only "dot"
+releases. That is, Python 3.6.0, 3.6.1, 3.6.2, etc., would all be lumped
+together as "3.6". Similarly with WeeWX versions.
 
 
 **Response codes**

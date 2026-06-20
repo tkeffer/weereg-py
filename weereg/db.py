@@ -9,7 +9,7 @@ from . import db
 
 # The set of data columns in the schema. They can be in any order.
 # TODO: read them dynamically from the databaase.
-STATION_COLUMNS = [
+DATABASE_COLUMNS = [
     "station_url",
     "description",
     "latitude",
@@ -24,8 +24,22 @@ STATION_COLUMNS = [
     "config_path",
     "entry_path"
 ]
+# Columns that are exposed to the public API
+PUBLIC_STATION_COLUMNS = [
+    "station_url",
+    "description",
+    "latitude",
+    "longitude",
+    "station_type",
+    "station_model",
+    "weewx_info",
+    "python_info",
+    "platform_info",
+    "last_addr",
+    "last_seen",
+]
 # Columns of the SQL table 'stations'
-STATION_INFO = frozenset(STATION_COLUMNS)
+STATION_INFO = frozenset(DATABASE_COLUMNS)
 
 
 def get_db():
@@ -127,7 +141,7 @@ def get_last_seen(station_url):
 
 
 # Prepare for the inner join:
-t_list = ["t.%s" % col for col in STATION_COLUMNS]
+t_list = ["t.%s" % col for col in PUBLIC_STATION_COLUMNS]
 # Form it:
 STATIONS_SINCE_SQL = f"""SELECT {", ".join(t_list)}
 FROM weereg.stations t
@@ -158,7 +172,7 @@ def gen_stations_since(since=0, limit=None):
     with db_conn.cursor() as cursor:
         cursor.execute(STATIONS_SINCE_SQL, (since, limit))
         for result in cursor.fetchall():
-            d = dict(zip(STATION_COLUMNS, result))
+            d = dict(zip(PUBLIC_STATION_COLUMNS, result))
             yield d
 
 
@@ -182,8 +196,15 @@ def get_stats(info_type, start_time=None, batch_size=7):
         cursor.execute("SELECT MAX(last_seen) FROM weereg.stations")
         max_timestamp = cursor.fetchone()[0]
         last_date = datetime.date.fromtimestamp(max_timestamp)
+
+        # Map installer_info to a CASE statement
+        if info_type == 'installer_info':
+            info_type_sql = "CASE WHEN config_path LIKE '/etc/%%' THEN 'package' ELSE 'other' END"
+        else:
+            info_type_sql = info_type
+
         interp_dict = {
-            'info_type': info_type,
+            'info_type': info_type_sql,
             'stop_date': last_date,
             'batch_size': batch_size,
             'start_clause': f"WHERE last_seen >= {start_time}" if start_time else "",
