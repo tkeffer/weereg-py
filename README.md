@@ -5,7 +5,7 @@ A Flask-based station registry for WeeWX.
 # Install
 
 ## Prerequisites
-- Python 3.8 or greater
+- Python 3.10 or greater
 
 ## Setting up weereg
 
@@ -45,7 +45,7 @@ These steps assume the weereg code will be in your home directory in
     # Activate it
     source ./venv/bin/activate
     # Install dependencies:
-    python3 -m pip install -r requirements.txt
+    python3 -m pip install .
     ```
 
 4. If necessary, create and initialize the database:

@@ -1,5 +1,10 @@
 weereg change history
 --------------------
+### 1.10.1 20-Jun-2026
+
+Convert from `requirements.txt` to `pyproject.toml`.
+
+
 ### 1.10.0 06-Mar-2026
 
 Introduce a new URL parameter `slim`. When set to `True`, only the minimum
