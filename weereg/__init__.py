@@ -314,7 +314,7 @@ def check_station(app, station_info):
             else:
                 version = "N/A"
             app.logger.info(f"Station {station_info['station_url']} ({version}) is "
-                            f"registering too frequently ({how_long}s)")
+                            f"registering too frequently ({how_long/3600:.1f}h)")
             raise RejectStation("FAIL. Registering too frequently", 429)
 
     return last_post
