@@ -215,7 +215,7 @@ def get_stats(info_type, start_time=None, batch_size=7):
 
         sql = """
         SELECT batch,
-               TRUNCATE(UNIX_TIMESTAMP(DATE_ADD('%(stop_date)s', INTERVAL - %(batch_size)s * batch + 1 DAY)), 0),
+               CAST(UNIX_TIMESTAMP(DATE_ADD('%(stop_date)s', INTERVAL - %(batch_size)s * batch + 1 DAY)) AS UNSIGNED),
                %(info_type)s,
                COUNT(*)
         FROM weereg.stations t
