@@ -3,7 +3,11 @@
 This document provides essential context for AI agents working on the `weereg` project.
 
 ## Project Overview
-`weereg` is a Flask-based station registry for the WeeWX weather station software. It allows weather stations to register themselves and provides APIs to retrieve active stations and usage statistics.
+`weereg` is a Flask-based station registry for the WeeWX weather station software. It serves two purposes:
+
+1. It allows weather stations to register themselves, typically once a day. Station registrations are retained
+   indefinitely, thus giving a complete history of stations.
+2. It provides APIs to retrieve active stations and usage statistics.
 
 ## Technology Stack
 - **Language**: Python 3.10+
@@ -27,9 +31,10 @@ The project follows a standard Flask application factory pattern.
 The primary table is `stations` in the `weereg` database.
 - **Table Engine**: MyISAM
 - **Key Columns**:
-    - `station_url`: Unique identifier (VARCHAR 255) for the station.
+    - `station_url`: Unique identifier (VARCHAR 255) for the station. This is the primary key.
+- **Columns**:
     - `latitude`, `longitude`: Float coordinates of the station.
-    - `last_seen`: Unix timestamp of the last time a station registered.
+    - `last_seen`: Time in UTC of the last time a station registered in Unix timestamp format.
     - `last_addr`: IP address of the reporting station (supports IPv6).
     - `weewx_info`, `python_info`, `platform_info`: Version and environment metadata.
     - `config_path`, `entry_path`: Internal paths (not exposed via public API).
@@ -47,6 +52,8 @@ The primary table is `stations` in the `weereg` database.
     - `GET`: Retrieve active stations (supports filtering via `since`, `max_age`, `limit`, and `slim`).
 - **Endpoint**: `GET /api/v2/stats/<info_type>`
 - **Purpose**: Usage statistics for various properties (e.g., Python versions, hardware types, and `installer_info`). Supports `consolidate` parameter for grouping similar versions.
+- **Endpoint**: `GET /api/v2/churn`
+- **Purpose**: Provides churn rate statistics for stations.
 
 ## Key Workflows
 ### Station Registration

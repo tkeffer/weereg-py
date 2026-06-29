@@ -207,6 +207,25 @@ def create_app(test_config=None):
 
         return results
 
+    @app.get('/api/v2/stats/churn', strict_slashes=False)
+    def get_churn_stats():
+        """Get station churn statistics"""
+        try:
+            if 'since' in request.args and 'max_age' in request.args:
+                return "Specify 'max_age' or 'since', but not both", 400
+            elif 'since' in request.args:
+                since = int(request.args['since'])
+            elif 'max_age' in request.args:
+                since = duration(request.args.get('max_age'))
+            else:
+                # Default to July 1st, 2023
+                since = 1688169600
+        except ValueError:
+            return "Badly formed request", 400
+
+        results = db.get_churn(since)
+        return results
+
     db.init_app(app)
 
     return app

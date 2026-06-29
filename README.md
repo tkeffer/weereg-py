@@ -553,6 +553,93 @@ Connection: close
   ...
 ```
 
+## Get churn statistics
+
+Returns information on how many stations from a monthly cohort survived in
+subsequent months.
+
+```
+GET /api/v2/stats/churn
+```
+
+**Parameters**
+
+| *Name*    | *Type* | *Description*                                                                                                              |
+|:----------|:-------|:---------------------------------------------------------------------------------------------------------------------------|
+| `since`   | int    | Include results since this time in unix epoch time. Optional. Default is July 1st, 2023.                                   |
+| `max_age` | int    | How old a station can be to be included. Can use [*duration notation*](#duration-notation). Optional. Default is all time. |
+
+NB: You can specify `since` or `max_age`, but not both.
+
+**Response codes**
+
+| *Status* | *Meaning*                                                              |
+|:---------|:-----------------------------------------------------------------------|
+| `200`    | Success                                                                |
+| `400`    | Badly formed request. Perhaps a character where a number was expected? |      
+
+If successful (`200`), the server will return the results as a JSON dictionary,
+where the key is the cohort start date (e.g., "2023-07-01"), and the value is two
+lists. The first list is the timestamps for the start of each month, the second
+the number of surviving stations from that cohort.
+
+**Examples**
+
+Request churn statistics:
+
+```shell
+curl -i --silent -X GET 'http://127.0.0.1:5000/api/v2/stats/churn'
+HTTP/1.1 200 OK
+Server: Werkzeug/3.0.2 Python/3.8.10
+Date: Mon, 15 Apr 2024 19:42:39 GMT
+Content-Type: application/json
+Content-Length: 453
+Connection: close
+
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.12.13
+Date: Mon, 29 Jun 2026 16:59:18 GMT
+Content-Type: application/json
+Content-Length: 22951
+Connection: close
+
+{
+  "2023-07-01": [
+    [
+      1688169600,
+      1690848000,
+      1693526400,
+      1696118400,
+      ...
+    ],
+    [
+      1826,
+      1724,
+      1692,
+      1662,
+      ...
+    ]
+  ],
+  "2023-08-01": [
+    [
+      1690848000,
+      1693526400,
+      1696118400,
+      1698796800,
+      ...
+    ],
+    [
+      1816,
+      1748,
+      1707,
+      1678,
+      ...
+    ]
+  ],
+  ...
+}
+```
+
 ## Duration notation
 
 | *Example* | *Meaning*                     |

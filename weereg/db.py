@@ -49,7 +49,8 @@ def get_db():
                                user=current_app.config['WEEREG_MYSQL_USER'],
                                passwd=current_app.config['WEEREG_MYSQL_PASSWORD'],
                                db=current_app.config['WEEREG_MYSQL_DATABASE'],
-                               autocommit=True)
+                               autocommit=True,
+                               init_command='SET time_zone = "+00:00"')
     return g.db
 
 
@@ -195,7 +196,9 @@ def get_stats(info_type, start_time=None, batch_size=7):
         # Get the last date in the dataset
         cursor.execute("SELECT MAX(last_seen) FROM weereg.stations")
         max_timestamp = cursor.fetchone()[0]
-        last_date = datetime.date.fromtimestamp(max_timestamp)
+        # Use UTC for calculating the last date
+        last_date = datetime.datetime.fromtimestamp(max_timestamp,
+                                                    tz=datetime.timezone.utc).date()
 
         # Map installer_info to a CASE statement
         if info_type == 'installer_info':
@@ -244,4 +247,46 @@ def get_stats(info_type, start_time=None, batch_size=7):
                 results[value] = [[], []]
             results[value][0].append(stop)
             results[value][1].append(count)
+        return results
+
+
+def get_churn(since):
+    """Calculate station churn and survival rates.
+    Args:
+        since (int): Start time in unix epoch time.
+    Returns:
+        dict: A dictionary where the key is the cohort date (string), and the
+            value is a list of two lists. The first list is the timestamps,
+            the second the count of surviving stations at that time.
+            { "YYYY-MM-01": [ [ts1, ts2, ...], [count1, count2, ...] ] }
+    """
+    db_conn = get_db()
+    with db_conn.cursor() as cursor:
+        sql = """
+        WITH MonthlyActivity AS (
+            SELECT DISTINCT 
+                station_url, 
+                DATE_FORMAT(FROM_UNIXTIME(last_seen), '%%Y-%%m-01') AS month_start,
+                CAST(UNIX_TIMESTAMP(DATE_FORMAT(FROM_UNIXTIME(last_seen), '%%Y-%%m-01')) AS UNSIGNED) AS ts
+            FROM stations
+            WHERE last_seen >= %s
+        )
+        SELECT 
+            c.month_start AS cohort,
+            s.ts AS survival_ts,
+            COUNT(*) AS surviving_count
+        FROM MonthlyActivity c
+        JOIN MonthlyActivity s ON c.station_url = s.station_url
+        WHERE s.month_start >= c.month_start
+        GROUP BY c.month_start, s.ts
+        ORDER BY c.month_start, s.ts;
+        """
+        cursor.execute(sql, (since,))
+        results = dict()
+        for row in cursor.fetchall():
+            cohort, ts, count = row
+            if cohort not in results:
+                results[cohort] = [[], []]
+            results[cohort][0].append(ts)
+            results[cohort][1].append(count)
         return results

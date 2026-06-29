@@ -1,5 +1,10 @@
 weereg change history
 --------------------
+### 1.11.0 29-Jun-2026
+
+Extend RESTful API to offer a measure of "churn."
+
+
 ### 1.10.1 20-Jun-2026
 
 Convert from `requirements.txt` to `pyproject.toml`.
